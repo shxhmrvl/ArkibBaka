@@ -298,4 +298,47 @@ function App() {
               </div>
 
               <button
-                cl
+                className="btn-buy mono"
+                disabled={balance < rig.cost}
+                onClick={() => buyUpgrade(rig.id)}
+              >
+                <span>Beli Unit</span>
+                <span>{rig.cost} $BAKA</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pindahan Dompet BakaCoin */}
+      <div className="panel wallet-box">
+        <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Send size={18} color="var(--primary)" /> Pindahkan $BAKA Ke Dompet / Minecraft IGN
+        </h3>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-dim)" }}>
+          Keluarkan BakaCoin yang dilombong ke pelayan Minecraft Bedrock atau alamat peribadi anda.
+        </p>
+
+        <form onSubmit={handleTransfer} className="wallet-input-row">
+          <input
+            type="text"
+            className="styled-input mono"
+            placeholder="Masukkan GamerTag / Minecraft IGN (cth: SteveMY)"
+            value={walletTarget}
+            onChange={(e) => setWalletTarget(e.target.value)}
+            required
+          />
+          <button type="submit" className="btn-transfer mono">
+            Tebus Semua ({balance.toFixed(2)} BAKA)
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
