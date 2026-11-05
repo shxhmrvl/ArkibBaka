@@ -4,12 +4,16 @@ import "./style.css";
 import { 
   Activity, Lock, Unlock, KeyRound, User, LogIn, LogOut, UserPlus,
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
-  Copy, Check, PlusCircle, Ticket, BarChart3, LineChart, MessageCircle, ExternalLink
+  Copy, Check, PlusCircle, Ticket, BarChart3, LineChart, 
+  MessageCircle, ArrowDownToLine, Terminal, CheckCircle2 
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
 const WHATSAPP_PHONE = "60183915460";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent("Salam Admin, saya nak beli PIN Topup BakaTrader (RM5)")}`;
+
+// Kadar Penukaran: RM 1.00 = $1,000 Scoreboard Money
+const RATE_RM_TO_SCOREBOARD = 1000;
 
 const generateRandomPinCode = () => {
   const part1 = Math.floor(1000 + Math.random() * 9000);
@@ -68,6 +72,12 @@ function App() {
     ];
   });
 
+  // SISTEM WITHDRAW KE SERVER MINECRAFT SCOREBOARD
+  const [withdrawRequests, setWithdrawRequests] = useState(() => {
+    const saved = localStorage.getItem("baka_withdraw_requests");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Modals & UI
   const [showAuthModal, setShowAuthModal] = useState(!currentUser);
   const [authTab, setAuthTab] = useState("login");
@@ -77,6 +87,10 @@ function App() {
 
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [inputPinCode, setInputPinCode] = useState("");
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawGamerTag, setWithdrawGamerTag] = useState("");
+  const [withdrawAmountRM, setWithdrawAmountRM] = useState("5");
+
   const [showAdmin, setShowAdmin] = useState(false);
 
   // Admin Auth
@@ -106,7 +120,11 @@ function App() {
     localStorage.setItem("baka_pin_database", JSON.stringify(pinDatabase));
   }, [pinDatabase]);
 
-  // Gelung Pasaran & Kemas Kini Candlestick
+  useEffect(() => {
+    localStorage.setItem("baka_withdraw_requests", JSON.stringify(withdrawRequests));
+  }, [withdrawRequests]);
+
+  // Gelung Pasaran Masa Nyata & Candlestick
   useEffect(() => {
     let tickCounter = 0;
 
@@ -305,6 +323,66 @@ function App() {
     showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
   };
 
+  // PENGELUARAN (WITHDRAW) DUIT WEB KE SCOREBOARD MONEY MINECRAFT
+  const handleWithdrawToServer = (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const amt = parseFloat(withdrawAmountRM);
+    const ign = withdrawGamerTag.trim();
+
+    if (!ign) {
+      showToast("Sila masukkan Minecraft GamerTag / IGN anda!");
+      return;
+    }
+
+    if (!amt || amt <= 0) {
+      showToast("Sila masukkan jumlah RM yang sah.");
+      return;
+    }
+
+    if (currentUser.fiatBalance < amt) {
+      showToast("Baki modal RM anda tidak mencukupi untuk withdraw!");
+      return;
+    }
+
+    // Kira Scoreboard Money yang akan didapat (cth: RM5 = $5,000 Scoreboard money)
+    const scoreboardEarned = Math.floor(amt * RATE_RM_TO_SCOREBOARD);
+
+    // Tolak baki RM pengguna di web
+    updateCurrentUserData({
+      fiatBalance: +(currentUser.fiatBalance - amt).toFixed(2)
+    });
+
+    // Cipta Rekod Tiket Pengeluaran untuk Admin proses
+    const newRequest = {
+      id: Date.now(),
+      username: currentUser.username,
+      gamerTag: ign,
+      amountRM: amt,
+      scoreboardMoney: scoreboardEarned,
+      command: `/scoreboard players add ${ign} money ${scoreboardEarned}`,
+      status: "PENDING",
+      time: new Date().toLocaleTimeString()
+    };
+
+    setWithdrawRequests([newRequest, ...withdrawRequests]);
+    setShowWithdrawModal(false);
+    setWithdrawGamerTag("");
+    showToast(`✅ Permintaan Withdraw RM ${amt.toFixed(2)} ($${scoreboardEarned.toLocaleString()} Money) dihantar ke Admin!`);
+  };
+
+  // Admin Selesaikan / Approve Withdraw
+  const handleApproveWithdraw = (id) => {
+    setWithdrawRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "SELESAI" } : r))
+    );
+    showToast("Permintaan ditandakan sebagai SELESAI!");
+  };
+
   const handleAdminGeneratePin = () => {
     const newCode = generateRandomPinCode();
     const newEntry = {
@@ -317,10 +395,10 @@ function App() {
     showToast(`PIN Baru Dijana: ${newCode} (RM5)`);
   };
 
-  const copyPinToClipboard = (code) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    showToast(`PIN ${code} disalin!`);
+  const copyTextToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(text);
+    showToast(`${label} disalin ke clipboard!`);
     setTimeout(() => setCopiedCode(""), 2000);
   };
 
@@ -372,13 +450,11 @@ function App() {
   const candleRange = maxCandle - minCandle || 1;
   const getY = (val) => 220 - ((val - minCandle) / candleRange) * 180;
 
-  // Garisan Grid Melintang (Price Levels)
   const gridLevels = [0.15, 0.38, 0.62, 0.85].map((pct) => {
     const pVal = minCandle + candleRange * pct;
     return { y: getY(pVal), price: pVal };
   });
 
-  // Garisan Grid Menegak (Time Intervals)
   const verticalGridXs = [50, 130, 210, 290, 370];
 
   const minP = Math.min(...priceHistory) * 0.985;
@@ -406,7 +482,7 @@ function App() {
           <div>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Exchange</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Platform Dagangan $BAKA & Bantuan WhatsApp Rasmi
+              Sistem Dagangan & Pengeluaran Scoreboard Money
             </p>
           </div>
         </div>
@@ -418,8 +494,12 @@ function App() {
                 <User size={15} /> {currentUser.username}
               </button>
 
+              <button className="btn-pill btn-withdraw mono" onClick={() => setShowWithdrawModal(true)}>
+                <ArrowDownToLine size={15} /> Withdraw ke Server
+              </button>
+
               <button className="btn-pill btn-redeem mono" onClick={() => setShowRedeemModal(true)}>
-                <KeyRound size={15} /> Tebus PIN (RM5)
+                <KeyRound size={15} /> Tebus PIN
               </button>
 
               <button className="btn-pill btn-logout mono" onClick={handleLogout} title="Log Keluar">
@@ -438,7 +518,7 @@ function App() {
         </div>
       </header>
 
-      {/* Stats Pengguna & Petak Beli PIN WhatsApp */}
+      {/* Stats Pengguna & Petak Tindakan */}
       <section className="stats-grid">
         <div className="card">
           <span className="stat-label mono">Baki Modal Tunai (MYR)</span>
@@ -446,8 +526,15 @@ function App() {
             RM {currentUser ? currentUser.fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
           </div>
 
-          {/* Butang Beli PIN WhatsApp & Tebus PIN bersebelahan */}
           <div className="stat-actions-row">
+            <button 
+              className="btn-pill btn-withdraw mono"
+              style={{ fontSize: "0.78rem", padding: "0.45rem 0.85rem" }}
+              onClick={() => setShowWithdrawModal(true)}
+            >
+              <ArrowDownToLine size={14} /> Withdraw Server
+            </button>
+
             <a 
               href={WHATSAPP_LINK} 
               target="_blank" 
@@ -455,16 +542,8 @@ function App() {
               className="btn-whatsapp mono"
               title="Chat WhatsApp Admin 018-3915460"
             >
-              <MessageCircle size={15} /> Beli PIN (WhatsApp)
+              <MessageCircle size={15} /> Beli PIN
             </a>
-
-            <button 
-              className="btn-pill btn-redeem mono" 
-              style={{ fontSize: "0.78rem", padding: "0.45rem 0.85rem" }}
-              onClick={() => setShowRedeemModal(true)}
-            >
-              <Ticket size={14} /> Masukkan PIN
-            </button>
           </div>
         </div>
 
@@ -474,17 +553,17 @@ function App() {
             {currentUser ? currentUser.bakaBalance.toFixed(4) : "0.0000"} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
-            Boleh dijual bila-bila masa
+            Jual coin untuk dapatkan RM dan withdraw ke Scoreboard
           </span>
         </div>
 
         <div className="card">
-          <span className="stat-label mono">Nilai Bersih Portfolio</span>
-          <div className="stat-val mono" style={{ color: "var(--gold)" }}>
-            RM {currentUser ? (currentUser.fiatBalance + (currentUser.bakaBalance * price)).toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
+          <span className="stat-label mono">Kadar Pengeluaran Server</span>
+          <div className="stat-val mono" style={{ color: "var(--cyan)", fontSize: "1.2rem" }}>
+            RM 1.00 = $1,000
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
-            Kiraan nilai semasa modal + coin
+            Scoreboard Money Bedrock (Objektif: money)
           </span>
         </div>
       </section>
@@ -536,10 +615,8 @@ function App() {
             </div>
           )}
 
-          {/* SVG DENGAN GRID TRADINGVIEW & LIVE PRICE TRACKER */}
           <div className="chart-box">
             <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-              {/* Garisan Grid Menegak (Vertical Time Grid) */}
               {verticalGridXs.map((xVal, idx) => (
                 <line
                   key={`v-${idx}`}
@@ -552,7 +629,6 @@ function App() {
                 />
               ))}
 
-              {/* Garisan Grid Melintang & Label Paksi-Y (Horizontal Price Grid) */}
               {gridLevels.map((lvl, idx) => (
                 <g key={`h-${idx}`}>
                   <line
@@ -575,7 +651,6 @@ function App() {
                 </g>
               ))}
 
-              {/* Garisan Penunjuk Harga Semasa (Current Price Indicator) */}
               <line
                 x1={0}
                 y1={currentPriceY}
@@ -605,7 +680,6 @@ function App() {
                 {price.toFixed(3)}
               </text>
 
-              {/* Mod Candlestick */}
               {chartMode === "candle" ? (
                 candles.map((c, i) => {
                   const candleWidth = 13;
@@ -643,7 +717,6 @@ function App() {
                   );
                 })
               ) : (
-                /* Mod Line Chart */
                 <polyline
                   fill="none"
                   stroke={isUp ? "var(--green)" : "var(--red)"}
@@ -703,6 +776,72 @@ function App() {
           </form>
         </div>
       </div>
+
+      {/* MODAL WITHDRAW KE SERVER MINECRAFT SCOREBOARD */}
+      {showWithdrawModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--cyan)" }}>
+                <ArrowDownToLine size={20} /> Withdraw ke Server Minecraft (Scoreboard)
+              </h3>
+              <button onClick={() => setShowWithdrawModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
+              Tukarkan baki RM anda ke dalam mata wang <strong>Scoreboard Money (Bedrock)</strong>. Admin akan memasukkan duit ke akaun server anda.
+            </p>
+
+            <form onSubmit={handleWithdrawToServer}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  MINECRAFT GAMERTAG / IGN ANDA
+                </label>
+                <input
+                  type="text"
+                  className="input-styled mono"
+                  placeholder="Cth: SteveMY / HafizCraft"
+                  value={withdrawGamerTag}
+                  onChange={(e) => setWithdrawGamerTag(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  JUMLAH RM NAK WITHDRAW
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max={currentUser ? currentUser.fiatBalance : 0}
+                  className="input-styled mono"
+                  placeholder="Cth: 5"
+                  value={withdrawAmountRM}
+                  onChange={(e) => setWithdrawAmountRM(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ background: "#090e1a", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "1.2rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                  <span style={{ color: "var(--text-muted)" }}>Duit Scoreboard Diterima:</span>
+                  <span className="mono" style={{ color: "var(--green)", fontWeight: 800 }}>
+                    ${((parseFloat(withdrawAmountRM) || 0) * RATE_RM_TO_SCOREBOARD).toLocaleString()} Money
+                  </span>
+                </div>
+              </div>
+
+              <button type="submit" className="btn-action-order mono" style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", color: "#fff" }}>
+                Hantar Permintaan Withdraw
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL AUTH (LOGIN & REGISTER) */}
       {showAuthModal && (
@@ -771,7 +910,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TEBUS PIN (RM5) BESERTA BUTANG WHATSAPP */}
+      {/* MODAL TEBUS PIN (RM5) */}
       {showRedeemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -827,7 +966,7 @@ function App() {
           <div className="modal-content" style={{ borderColor: "var(--gold)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--gold)" }}>
-                <ShieldAlert size={20} /> Admin Dashboard & Penjana PIN
+                <ShieldAlert size={20} /> Admin Dashboard & Pengurusan Server
               </h3>
               <button onClick={() => setShowAdmin(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
                 <X size={18} />
@@ -837,7 +976,7 @@ function App() {
             {!isAdminAuth ? (
               <form onSubmit={handleAdminVerify}>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>
-                  Masukkan PIN Pentadbir (200200) untuk kawal pasaran & jana PIN:
+                  Masukkan PIN Pentadbir (200200) untuk menguruskan pengeluaran dan pasaran:
                 </p>
                 <input
                   type="password"
@@ -855,6 +994,61 @@ function App() {
               </form>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+                {/* SENARAI PENGELUARAN KE SERVER (WITHDRAW REQUESTS) */}
+                <div style={{ background: "#090e1a", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <h4 style={{ fontSize: "0.95rem", color: "var(--cyan)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <Terminal size={16} /> Permintaan Withdraw Duit Scoreboard ({withdrawRequests.length})
+                    </h4>
+                  </div>
+
+                  <div className="pin-list">
+                    {withdrawRequests.length === 0 ? (
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>
+                        Tiada sebarang permintaan withdraw setakat ini.
+                      </p>
+                    ) : (
+                      withdrawRequests.map((req) => (
+                        <div key={req.id} style={{ background: "#060913", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <strong style={{ color: "#fff" }}>IGN: {req.gamerTag}</strong>
+                              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>
+                                ({req.username}) - RM {req.amountRM.toFixed(2)}
+                              </span>
+                            </div>
+                            <span className={`badge-status ${req.status === "PENDING" ? "badge-pending" : "badge-avail"}`}>
+                              {req.status}
+                            </span>
+                          </div>
+
+                          {/* Command Box dengan butang salin */}
+                          <div className="command-snippet mono">
+                            <span>{req.command}</span>
+                            <button
+                              onClick={() => copyTextToClipboard(req.command, "Command")}
+                              style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.2rem" }}
+                              title="Salin Command untuk ditampal dalam Minecraft"
+                            >
+                              {copiedCode === req.command ? <Check size={14} /> : <Copy size={14} />} Salin
+                            </button>
+                          </div>
+
+                          {req.status === "PENDING" && (
+                            <button
+                              onClick={() => handleApproveWithdraw(req.id)}
+                              className="btn-pill btn-redeem mono"
+                              style={{ marginTop: "0.5rem", width: "100%", justifyContent: "center", fontSize: "0.75rem" }}
+                            >
+                              <CheckCircle2 size={14} /> Tandakan Telah Dimasukkan di Server
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 {/* Penjana PIN Sekali Pakai (RM5) */}
                 <div style={{ background: "#090e1a", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -884,7 +1078,7 @@ function App() {
                           </span>
                           {pin.status === "AVAILABLE" && (
                             <button
-                              onClick={() => copyPinToClipboard(pin.code)}
+                              onClick={() => copyTextToClipboard(pin.code, "PIN")}
                               style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer" }}
                               title="Salin PIN"
                             >
