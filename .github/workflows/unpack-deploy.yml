@@ -5,6 +5,7 @@ on:
     paths:
       - 'Arkib-Baka-website.zip'
       - '.github/workflows/unpack-deploy.yml'
+      - '.github/workflows/unpack-deploy-fixed.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,7 +33,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
       - name: Install and build
         run: |
           npm install
