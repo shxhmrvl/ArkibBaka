@@ -1,459 +1,301 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
-  Server, Copy, Check, MessageSquare, Heart, Send, 
-  MapPin, Image, Search, BookOpen, ChevronDown, ChevronUp,
-  Flame, Sparkles, AlertCircle
+  Zap, Cpu, HardDrive, Terminal, Shield, ArrowUpRight, 
+  Coins, Activity, Power, RefreshCw, Send, Check
 } from "lucide-react";
 
-const SERVER_INFO = {
-  name: "BakaCrew SMP",
-  ip: "baka.skyes.me",
-  port: "19205",
-  edition: "Bedrock Edition",
-  location: "Malaysia 🇲🇾",
-};
-
-const INITIAL_POSTS = [
+// Senarai perkakasan melombong yang boleh dibeli
+const RIG_STORE = [
   {
-    id: 1,
-    username: "Lightinityy",
-    category: "General",
-    text: "Selamat datang ke BakaCrew Hub! Server Bedrock khas untuk mengeratkan pemain Minecraft Malaysia. Bersama kita terokai dunia SMP tanpa lag! 🔥",
-    image: "",
-    likes: 14,
-    isLiked: false,
-    timestamp: "Admin Post",
-    comments: [
-      { id: 101, username: "DanialMC", text: "Terbaik admin! Server stabil sangat ping rendah." }
-    ]
+    id: "cpu_rig",
+    name: "Celeron Dual-Core Miner",
+    desc: "Melombong asas menggunakan kuasa thread CPU.",
+    cost: 5,
+    hashBonus: 2.5,
+    count: 0
   },
   {
-    id: 2,
-    username: "FaridBuilder",
-    category: "Showcase",
-    text: "Pangkalan bawah tanah baru saya di koordinat (X: 240, Z: -880) akhirnya siap! Jemput singgah tengok auto-sorter saya.",
-    image: "https://images.unsplash.com/photo-1627856013091-fed6e4e30025?auto=format&fit=crop&w=1000&q=80",
-    likes: 21,
-    isLiked: false,
-    timestamp: "3 jam yang lalu",
-    comments: []
+    id: "gpu_1660",
+    name: "NVIDIA GTX 1660 Super",
+    desc: "Rig bajet yang efisien untuk algoritma BakaCrypt.",
+    cost: 25,
+    hashBonus: 15.0,
+    count: 0
   },
   {
-    id: 3,
-    username: "Aiman_Trader",
-    category: "Trade",
-    text: "Mencari 2 Netherite Ingot. Saya ada stok 3 Stack Diamond & Mending Book untuk ditukar di Spawn Market!",
-    image: "",
-    likes: 5,
-    isLiked: false,
-    timestamp: "5 jam yang lalu",
-    comments: []
+    id: "gpu_4090",
+    name: "RTX 4090 Monster Rig",
+    desc: "Kad grafik ekstrem dengan kuasa VRAM 24GB.",
+    cost: 100,
+    hashBonus: 75.0,
+    count: 0
+  },
+  {
+    id: "asic_s19",
+    name: "BakaMiner ASIC Pro",
+    desc: "Cip pemprosesan khas SHA-256 direka khas melombong blok.",
+    cost: 450,
+    hashBonus: 350.0,
+    count: 0
   }
 ];
 
 function App() {
-  const [serverStatus, setServerStatus] = useState({ online: false, players: 0, max: 30 });
-  const [toast, setToast] = useState("");
-  const [showGuide, setShowGuide] = useState(false);
-  
-  // Filtering & Search
-  const [activeTab, setActiveTab] = useState("Semua");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Post Composer State
-  const [author, setAuthor] = useState("");
-  const [category, setCategory] = useState("General");
-  const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [commentInputs, setCommentInputs] = useState({});
-
-  // Local Storage Data
-  const [posts, setPosts] = useState(() => {
-    const saved = localStorage.getItem("bakacrew_v2_posts");
-    return saved ? JSON.parse(saved) : INITIAL_POSTS;
+  // Simpanan data dalam localStorage
+  const [balance, setBalance] = useState(() => {
+    const s = localStorage.getItem("baka_balance");
+    return s ? parseFloat(s) : 0.00;
   });
 
-  useEffect(() => {
-    localStorage.setItem("bakacrew_v2_posts", JSON.stringify(posts));
-  }, [posts]);
+  const [blocksFound, setBlocksFound] = useState(() => {
+    const s = localStorage.getItem("baka_blocks");
+    return s ? parseInt(s) : 0;
+  });
 
-  // Semak status pelayan Minecraft Bedrock live
-  useEffect(() => {
-    fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_INFO.ip}:${SERVER_INFO.port}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setServerStatus({
-          online: data.online,
-          players: data.players?.online || 0,
-          max: data.players?.max || 30
-        });
-      })
-      .catch(() => setServerStatus({ online: false, players: 0, max: 30 }));
-  }, []);
+  const [inventory, setInventory] = useState(() => {
+    const s = localStorage.getItem("baka_rigs");
+    return s ? JSON.parse(s) : RIG_STORE;
+  });
 
-  const showNotification = (msg) => {
+  const [isMining, setIsMining] = useState(false);
+  const [manualClicks, setManualClicks] = useState(0);
+  const [logs, setLogs] = useState([
+    { id: 1, time: "INIT", text: "BakaCoin ($BAKA) Node v2.6.4 Ready. Algoritma: BakaCrypt-256.", type: "normal" }
+  ]);
+  const [walletTarget, setWalletTarget] = useState("");
+  const [toast, setToast] = useState("");
+
+  // Kiraan hashrate semasa berdasarkan perkakasan
+  const baseHashrate = isMining ? 1.0 : 0.0;
+  const hardwareHashrate = inventory.reduce((total, item) => total + (item.count * item.hashBonus), 0);
+  const totalHashrate = (baseHashrate + hardwareHashrate).toFixed(1);
+
+  // Auto-save data
+  useEffect(() => {
+    localStorage.setItem("baka_balance", balance.toString());
+    localStorage.setItem("baka_blocks", blocksFound.toString());
+    localStorage.setItem("baka_rigs", JSON.stringify(inventory));
+  }, [balance, blocksFound, inventory]);
+
+  const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3000);
   };
 
-  const copyToClipboard = (text, label) => {
-    navigator.clipboard.writeText(text);
-    showNotification(`${label} (${text}) berjaya disalin!`);
+  const addLog = (text, type = "normal") => {
+    const time = new Date().toLocaleTimeString();
+    setLogs((prev) => [{ id: Date.now() + Math.random(), time, text, type }, ...prev.slice(0, 40)]);
   };
 
-  const handleCreatePost = (e) => {
-    e.preventDefault();
-    if (!author.trim() || !content.trim()) return;
+  // Mining Engine Loop (Setiap saat menjana BAKA sekiranya aktif atau ada rig)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const activeHash = parseFloat(totalHashrate);
+      if (activeHash <= 0) return;
 
-    const newPost = {
-      id: Date.now(),
-      username: author.trim(),
-      category: category,
-      text: content.trim(),
-      image: imageUrl.trim(),
-      likes: 0,
-      isLiked: false,
-      timestamp: "Baru sahaja",
-      comments: []
-    };
+      // Pendapatan BAKA sesaat mengikut hashrate
+      const reward = (activeHash * 0.005);
+      setBalance((prev) => +(prev + reward).toFixed(4));
 
-    setPosts([newPost, ...posts]);
-    setContent("");
-    setImageUrl("");
-    showNotification("Post anda berjaya diterbitkan!");
+      // Simulasi carian hash
+      const randomNonce = Math.floor(Math.random() * 9999999).toString(16);
+      const mockHash = "0000" + Array.from({ length: 28 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+
+      // Peluang jumpa blok rawak
+      if (Math.random() < 0.25) {
+        const bonusBlock = +(Math.random() * 0.5 + 0.1).toFixed(2);
+        setBalance((prev) => +(prev + bonusBlock).toFixed(4));
+        setBlocksFound((b) => b + 1);
+        addLog(`🏆 BLOK DITEMUI! Nonce: 0x${randomNonce} -> Ganjaran +${bonusBlock} $BAKA`, "success");
+      } else {
+        addLog(`Hashing #Nonce: 0x${randomNonce} [${mockHash.substring(0, 20)}...] (${totalHashrate} MH/s)`, "hash");
+      }
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [totalHashrate]);
+
+  // Butang klik manual melombong pantas
+  const handleManualClick = () => {
+    const reward = 0.05;
+    setBalance((prev) => +(prev + reward).toFixed(4));
+    setManualClicks((c) => c + 1);
+    addLog(`⚡ MANUAL MINE: +${reward} $BAKA disahkan ke wallet.`, "success");
   };
 
-  const toggleLike = (postId) => {
-    setPosts(
-      posts.map((p) => {
-        if (p.id === postId) {
+  // Membeli Rig Upgrade
+  const buyUpgrade = (rigId) => {
+    const target = inventory.find((i) => i.id === rigId);
+    if (!target || balance < target.cost) {
+      showToast("Baki BakaCoin tidak mencukupi!");
+      return;
+    }
+
+    setBalance((prev) => +(prev - target.cost).toFixed(4));
+    setInventory((prev) =>
+      prev.map((item) => {
+        if (item.id === rigId) {
           return {
-            ...p,
-            isLiked: !p.isLiked,
-            likes: p.isLiked ? p.likes - 1 : p.likes + 1
+            ...item,
+            count: item.count + 1,
+            cost: Math.round(item.cost * 1.35) // Harga naik 35% setiap pembelian
           };
         }
-        return p;
+        return item;
       })
     );
+    showToast(`Berjaya menaik taraf ${target.name}!`);
+    addLog(`⚙️ UPGRADE: ${target.name} dipasang. +${target.hashBonus} MH/s ditambah.`, "success");
   };
 
-  const handleAddComment = (postId, e) => {
+  const handleTransfer = (e) => {
     e.preventDefault();
-    const commentText = commentInputs[postId];
-    if (!commentText || !commentText.trim()) return;
-
-    setPosts(
-      posts.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            comments: [
-              ...p.comments,
-              {
-                id: Date.now(),
-                username: author || "Pemain Bedrock",
-                text: commentText.trim()
-              }
-            ]
-          };
-        }
-        return p;
-      })
-    );
-    setCommentInputs({ ...commentInputs, [postId]: "" });
-    showNotification("Komen berjaya dihantar!");
+    if (!walletTarget || balance <= 0) return;
+    const amount = balance;
+    setBalance(0);
+    showToast(`Berjaya pindah ${amount} BAKA ke ${walletTarget}!`);
+    addLog(`🚀 TRANSFER: ${amount} $BAKA dihantar ke sasaran [${walletTarget}].`, "success");
+    setWalletTarget("");
   };
-
-  // Filter posts
-  const filteredPosts = posts.filter((post) => {
-    const matchesTab = activeTab === "Semua" || post.category === activeTab;
-    const matchesSearch = 
-      post.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.username.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
 
   return (
-    <div className="container">
-      {/* Toast Alert */}
-      {toast && (
-        <div className="toast">
-          <Check size={18} />
-          <span>{toast}</span>
-        </div>
-      )}
+    <div className="app-container">
+      {toast && <div className="toast-bar">{toast}</div>}
 
       {/* Navbar */}
-      <nav className="navbar">
-        <div className="brand">
-          <div className="brand-icon">
-            <Server size={24} color="#ffffff" />
+      <nav className="panel nav-header">
+        <div className="logo-badge">
+          <div className="logo-circle">
+            <Coins size={22} color="#000" />
           </div>
           <div>
-            <div className="brand-name">
-              BakaCrew <span>SMP</span>
-            </div>
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaCoin Mining Node</h2>
+            <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>Network: BakaChain Mainnet</p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <span className="badge-flag" style={{ margin: 0 }}>
-            {SERVER_INFO.edition}
-          </span>
+
+        <div className="node-status">
+          <span className="pulse"></span>
+          <span>Node Aktif (Ping: 12ms)</span>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="badge-flag">
-          <MapPin size={14} /> Pelayan Minecraft Komuniti {SERVER_INFO.location}
-        </div>
-        <h1>
-          Satu Komuniti, Satu <span className="gradient-text">Bedrock SMP</span>
-        </h1>
-        <p>
-          BakaCrew didedikasikan khas untuk menyatukan pemain telefon pintar (MCPE), Windows 10/11, dan konsol di Malaysia.
-        </p>
-
-        {/* Live Status Connection Panels */}
-        <div className="connection-panel">
-          <div className="glass conn-item">
-            <div className="conn-meta">
-              <span>Server Address (IP)</span>
-              <div className="conn-val">{SERVER_INFO.ip}</div>
-            </div>
-            <button 
-              className="btn-copy" 
-              onClick={() => copyToClipboard(SERVER_INFO.ip, "Alamat IP")}
-              title="Salin IP"
-            >
-              <Copy size={16} />
-            </button>
+      {/* Status & Metrik Utama */}
+      <div className="metrics-grid">
+        <div className="panel metric-card">
+          <div className="metric-title"><Coins size={14} color="var(--gold)" /> Jumlah BakaCoin ($BAKA)</div>
+          <div className="metric-val mono" style={{ color: "var(--gold)" }}>
+            {balance.toFixed(4)}
           </div>
-
-          <div className="glass conn-item">
-            <div className="conn-meta">
-              <span>Port</span>
-              <div className="conn-val">{SERVER_INFO.port}</div>
-            </div>
-            <button 
-              className="btn-copy" 
-              onClick={() => copyToClipboard(SERVER_INFO.port, "Port")}
-              title="Salin Port"
-            >
-              <Copy size={16} />
-            </button>
-          </div>
-
-          <div className="glass conn-item">
-            <div className="conn-meta">
-              <span>Status Pelayan</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.3rem" }}>
-                <span className={serverStatus.online ? "pulse-dot" : ""} style={!serverStatus.online ? { width: 10, height: 10, background: "var(--danger)", borderRadius: "50%" } : {}} />
-                <span style={{ fontWeight: 700, fontSize: "0.95rem" }}>
-                  {serverStatus.online ? `${serverStatus.players} / ${serverStatus.max} Pemain` : "Standby / Offline"}
-                </span>
-              </div>
-            </div>
-          </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+            ≈ RM {(balance * 0.45).toFixed(2)} MYR
+          </span>
         </div>
 
-        {/* Panduan Masuk Expandable */}
-        <button className="guide-btn" onClick={() => setShowGuide(!showGuide)}>
-          <BookOpen size={15} /> 
-          {showGuide ? "Tutup Panduan Menyertai" : "Cara Masuk Server di Bedrock (Telefon / PC)"}
-          {showGuide ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
-
-        {showGuide && (
-          <div className="glass guide-box">
-            <h4 style={{ color: "var(--primary)", marginBottom: "0.5rem" }}>Langkah Mudah Menyertai:</h4>
-            <ol style={{ paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              <li>Buka Minecraft Bedrock (MCPE / Windows / PS / Xbox).</li>
-              <li>Tekan <strong>Play</strong> ➡️ pilih tab <strong>Servers</strong> ➡️ tatal ke bawah dan tekan <strong>Add Server</strong>.</li>
-              <li>Masukkan Server Name: <code>BakaCrew</code></li>
-              <li>Server Address: <code>{SERVER_INFO.ip}</code> | Port: <code>{SERVER_INFO.port}</code></li>
-              <li>Tekan <strong>Save</strong> dan tekan <strong>Join Server</strong>!</li>
-            </ol>
+        <div className="panel metric-card">
+          <div className="metric-title"><Zap size={14} color="var(--cyan)" /> Jumlah Kuasa (Hashrate)</div>
+          <div className="metric-val mono" style={{ color: "var(--cyan)" }}>
+            {totalHashrate} <span style={{ fontSize: "0.9rem" }}>MH/s</span>
           </div>
-        )}
-      </section>
-
-      {/* Modern Post Composer */}
-      <section className="glass composer">
-        <form onSubmit={handleCreatePost}>
-          <div className="composer-header">
-            {/* Live 3D Head Preview berdasarkan nama yang ditaip */}
-            <img 
-              src={`https://mc-heads.net/avatar/${author.trim() || "Steve"}/64`} 
-              alt="Avatar"
-              className="composer-avatar-preview"
-            />
-            <div style={{ flex: 1 }}>
-              <input
-                type="text"
-                className="input-styled"
-                placeholder="GamerTag / IGN Minecraft anda (cth: Hafiz_Craft)"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                required
-              />
-            </div>
-            <select 
-              className="tag-select"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="General">💬 General</option>
-              <option value="Showcase">🏰 Showcase Binaan</option>
-              <option value="Trade">💎 Perdagangan</option>
-            </select>
-          </div>
-
-          <textarea
-            className="input-styled"
-            placeholder="Ada cerita menarik hari ini? Kongsi koordinat, projek mega atau buka kedai jual beli..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-          />
-
-          <div style={{ marginTop: "0.6rem" }}>
-            <input
-              type="url"
-              className="input-styled"
-              style={{ fontSize: "0.85rem" }}
-              placeholder="Pautan URL Gambar / Screenshot (pilihan)"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-            />
-          </div>
-
-          <div className="composer-footer">
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              Avatar anda dikemas kini mengikut skin rasmi Minecraft.
-            </span>
-            <button type="submit" className="btn-primary-action">
-              <Send size={15} /> Terbitkan Ke Feed
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {/* Feed Filters & Search Bar */}
-      <div className="feed-toolbar">
-        <div className="tab-group">
-          {["Semua", "General", "Showcase", "Trade"].map((tab) => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === "Semua" ? "✨ Semua Post" : tab}
-            </button>
-          ))}
+          <span style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+            {inventory.reduce((a, b) => a + b.count, 0)} Rig perkakasan beroperasi
+          </span>
         </div>
 
-        <div className="search-box">
-          <Search size={16} color="var(--text-muted)" />
-          <input
-            type="text"
-            placeholder="Cari post atau pemain..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="panel metric-card">
+          <div className="metric-title"><Activity size={14} color="var(--primary)" /> Blok Disahkan</div>
+          <div className="metric-val mono" style={{ color: "var(--primary)" }}>
+            {blocksFound}
+          </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+            Target Kesukaran: 0x0000FFFF
+          </span>
         </div>
       </div>
 
-      {/* Feed Post List */}
-      <section>
-        {filteredPosts.length === 0 ? (
-          <div className="glass" style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>
-            <AlertCircle size={36} style={{ margin: "0 auto 0.5rem auto", display: "block" }} />
-            Tiada perbualan dijumpai untuk carian ini.
-          </div>
-        ) : (
-          filteredPosts.map((post) => (
-            <article key={post.id} className="glass post-card">
-              <div className="post-head">
-                <div className="post-user">
-                  <img
-                    src={`https://mc-heads.net/avatar/${post.username}/48`}
-                    alt={post.username}
-                    className="post-avatar"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://mc-heads.net/avatar/Steve/48";
-                    }}
-                  />
-                  <div>
-                    <h4 style={{ fontSize: "1rem", fontWeight: 700 }}>{post.username}</h4>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{post.timestamp}</span>
-                  </div>
-                </div>
+      {/* Grid Perlombongan & Terminal */}
+      <div className="mining-layout">
+        {/* Unit Rig Utama */}
+        <div className="panel rig-box">
+          <h3 style={{ fontSize: "1.2rem" }}>Enjin Perlombongan BakaCrypt</h3>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-dim)", marginTop: "0.3rem" }}>
+            Tekan butang untuk melombong secara manual atau hidupkan rig automatik.
+          </p>
 
-                <span className={`post-badge-tag tag-${post.category}`}>
-                  {post.category}
+          <button
+            className={`mine-power-btn ${isMining ? "active" : ""}`}
+            onClick={handleManualClick}
+          >
+            <Power size={48} />
+            <span className="mono" style={{ fontSize: "0.9rem", fontWeight: 700 }}>
+              {isMining ? "MINING AKTIF" : "KLIK MINE"}
+            </span>
+          </button>
+
+          <div style={{ display: "flex", gap: "1rem" }}>
+            <button
+              onClick={() => setIsMining(!isMining)}
+              style={{
+                background: isMining ? "var(--danger)" : "var(--primary)",
+                border: "none",
+                color: "#000",
+                fontWeight: 800,
+                padding: "0.6rem 1.4rem",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem"
+              }}
+            >
+              <RefreshCw size={16} /> {isMining ? "Hentikan Generator" : "Jalankan Auto-Rig"}
+            </button>
+          </div>
+        </div>
+
+        {/* Terminal Langsung */}
+        <div className="terminal-window">
+          <div className="terminal-header">
+            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <Terminal size={14} color="var(--cyan)" /> BakaNode Debug Console
+            </span>
+            <span className="mono">STREAMING LIVE</span>
+          </div>
+
+          <div className="terminal-logs mono">
+            {logs.map((log) => (
+              <div key={log.id} className="log-row">
+                <span className="log-time">[{log.time}]</span>
+                <span className={log.type === "success" ? "log-success" : log.type === "hash" ? "log-hash" : ""}>
+                  {log.text}
                 </span>
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              <div className="post-body">{post.text}</div>
+      {/* Kedai Perkakasan Rig Upgrades */}
+      <div className="shop-section">
+        <h3 className="shop-title">
+          <HardDrive size={20} color="var(--cyan)" /> Perkakasan Perlombongan (Rig Market)
+        </h3>
 
-              {post.image && (
-                <img src={post.image} alt="Screenshot Binaan" className="post-image-preview" />
-              )}
-
-              {/* Action Buttons */}
-              <div className="post-bar">
-                <button
-                  className={`btn-interactive ${post.isLiked ? "liked" : ""}`}
-                  onClick={() => toggleLike(post.id)}
-                >
-                  <Heart size={16} fill={post.isLiked ? "currentColor" : "none"} />
-                  {post.likes} Suka
-                </button>
-                <div className="btn-interactive">
-                  <MessageSquare size={16} />
-                  {post.comments.length} Komen
+        <div className="hardware-grid">
+          {inventory.map((rig) => (
+            <div key={rig.id} className="panel hardware-card">
+              <div className="hw-info">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h4>{rig.name}</h4>
+                  <span className="mono" style={{ background: "rgba(255,255,255,0.06)", padding: "0.2rem 0.5rem", borderRadius: "6px", fontSize: "0.75rem" }}>
+                    Dimiliki: {rig.count}
+                  </span>
                 </div>
+                <p>{rig.desc}</p>
+                <div className="hw-stat mono">+{rig.hashBonus} MH/s setiap unit</div>
               </div>
 
-              {/* Komuniti Komen Drawer */}
-              <div className="comment-drawer">
-                {post.comments.map((c) => (
-                  <div key={c.id} className="comment-bubble">
-                    <strong style={{ color: "var(--primary)", marginRight: "0.5rem" }}>{c.username}:</strong>
-                    <span>{c.text}</span>
-                  </div>
-                ))}
-
-                <form onSubmit={(e) => handleAddComment(post.id, e)} style={{ display: "flex", gap: "0.5rem", marginTop: "0.8rem" }}>
-                  <input
-                    type="text"
-                    className="input-styled"
-                    style={{ padding: "0.5rem 0.85rem", fontSize: "0.85rem" }}
-                    placeholder="Tulis komen anda..."
-                    value={commentInputs[post.id] || ""}
-                    onChange={(e) =>
-                      setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
-                    }
-                  />
-                  <button type="submit" className="btn-primary-action" style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}>
-                    Komen
-                  </button>
-                </form>
-              </div>
-            </article>
-          ))
-        )}
-      </section>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+              <button
+                cl
