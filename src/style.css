@@ -9,6 +9,8 @@
   --red-glow: rgba(244, 63, 94, 0.3);
   --gold: #f59e0b;
   --cyan: #06b6d4;
+  --whatsapp: #25d366;
+  --whatsapp-glow: rgba(37, 211, 102, 0.35);
   --text-primary: #f8fafc;
   --text-muted: #64748b;
 }
@@ -93,6 +95,7 @@ body {
   align-items: center;
   gap: 0.4rem;
   border: none;
+  text-decoration: none;
   transition: all 0.2s;
 }
 
@@ -101,6 +104,30 @@ body {
   color: #000;
   font-weight: 800;
   box-shadow: 0 0 15px var(--green-glow);
+}
+
+/* Butang WhatsApp Beli PIN */
+.btn-whatsapp {
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.45rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 12px var(--whatsapp-glow);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-whatsapp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(37, 211, 102, 0.5);
+  color: #ffffff;
 }
 
 .btn-admin {
@@ -124,7 +151,7 @@ body {
 /* Stats */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -140,6 +167,13 @@ body {
   font-size: 1.5rem;
   font-weight: 800;
   margin-top: 0.25rem;
+}
+
+.stat-actions-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
 }
 
 /* Trading Grid */
@@ -158,8 +192,8 @@ body {
 
 .chart-box {
   width: 100%;
-  height: 270px;
-  background: #090e1a;
+  height: 280px;
+  background: #060913;
   border: 1px solid var(--border-ui);
   border-radius: 10px;
   overflow: hidden;
