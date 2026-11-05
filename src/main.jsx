@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
-  Activity, Lock, Unlock, KeyRound, User, 
+  Activity, Lock, Unlock, KeyRound, User, LogIn, LogOut, UserPlus,
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
   Copy, Check, PlusCircle, Ticket, BarChart3, LineChart
 } from "lucide-react";
@@ -15,7 +15,6 @@ const generateRandomPinCode = () => {
   return `BK5-${part1}-${part2}`;
 };
 
-// Menjana data lilin (Candlestick) permulaan
 const generateInitialCandles = () => {
   let base = 2.40;
   const list = [];
@@ -32,13 +31,23 @@ const generateInitialCandles = () => {
 };
 
 function App() {
-  // Pengguna Semasa
-  const [username, setUsername] = useState(() => localStorage.getItem("bakact_user") || "Trader_1");
-  const [fiatBalance, setFiatBalance] = useState(() => parseFloat(localStorage.getItem(`baka_fiat_${username}`)) || 0.0);
-  const [bakaBalance, setBakaBalance] = useState(() => parseFloat(localStorage.getItem(`baka_coin_${username}`)) || 10.0);
+  // PANGKALAN DATA PENGGUNA (User Database)
+  const [usersDb, setUsersDb] = useState(() => {
+    const saved = localStorage.getItem("baka_users_db");
+    return saved ? JSON.parse(saved) : [
+      { username: "trader_demo", password: "123", fiatBalance: 15.00, bakaBalance: 5.0, trades: [] }
+    ];
+  });
+
+  // Sesi Pengguna Aktif
+  const [currentUsername, setCurrentUsername] = useState(() => {
+    return localStorage.getItem("baka_active_user") || "trader_demo";
+  });
+
+  const currentUser = usersDb.find((u) => u.username === currentUsername) || null;
 
   // Pasaran & Graf
-  const [chartMode, setChartMode] = useState("candle"); // 'candle' atau 'line'
+  const [chartMode, setChartMode] = useState("candle");
   const [price, setPrice] = useState(2.50);
   const [prevPrice, setPrevPrice] = useState(2.50);
   const [candles, setCandles] = useState(generateInitialCandles);
@@ -48,10 +57,6 @@ function App() {
   // Transaksi
   const [tradeAmount, setTradeAmount] = useState("");
   const [orderType, setOrderType] = useState("buy");
-  const [orderHistory, setOrderHistory] = useState(() => {
-    const s = localStorage.getItem(`baka_trades_${username}`);
-    return s ? JSON.parse(s) : [];
-  });
 
   // Sistem Baucar PIN
   const [pinDatabase, setPinDatabase] = useState(() => {
@@ -61,12 +66,16 @@ function App() {
     ];
   });
 
-  // Modals & UI
+  // Modals
+  const [showAuthModal, setShowAuthModal] = useState(!currentUser);
+  const [authTab, setAuthTab] = useState("login"); // 'login' | 'register'
+  const [authUsername, setAuthUsername] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [inputPinCode, setInputPinCode] = useState("");
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [tempUser, setTempUser] = useState("");
 
   // Admin Auth
   const [adminPinInput, setAdminPinInput] = useState("");
@@ -79,16 +88,24 @@ function App() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // Simpan data ke localStorage
+  // Simpan Users Database & PIN ke LocalStorage
   useEffect(() => {
-    localStorage.setItem("bakact_user", username);
-    localStorage.setItem(`baka_fiat_${username}`, fiatBalance.toString());
-    localStorage.setItem(`baka_coin_${username}`, bakaBalance.toString());
-    localStorage.setItem(`baka_trades_${username}`, JSON.stringify(orderHistory));
-    localStorage.setItem("baka_pin_database", JSON.stringify(pinDatabase));
-  }, [username, fiatBalance, bakaBalance, orderHistory, pinDatabase]);
+    localStorage.setItem("baka_users_db", JSON.stringify(usersDb));
+  }, [usersDb]);
 
-  // Gelung Masa Nyata Pasaran & Pembentukan Lilin (Candlestick Engine)
+  useEffect(() => {
+    if (currentUsername) {
+      localStorage.setItem("baka_active_user", currentUsername);
+    } else {
+      localStorage.removeItem("baka_active_user");
+    }
+  }, [currentUsername]);
+
+  useEffect(() => {
+    localStorage.setItem("baka_pin_database", JSON.stringify(pinDatabase));
+  }, [pinDatabase]);
+
+  // Gelung Masa Nyata Pasaran & Candlestick
   useEffect(() => {
     let tickCounter = 0;
 
@@ -102,12 +119,10 @@ function App() {
         const next = Math.max(0.01, +(current * (1 + change)).toFixed(4));
         setPriceHistory((h) => [...h.slice(-25), next]);
 
-        // Kemas kini data Candlestick
         setCandles((prevCandles) => {
           tickCounter++;
           const lastCandle = prevCandles[prevCandles.length - 1];
 
-          // Setiap 4 tick, buka lilin baru. Jika belum, kemas kini lilin semasa
           if (tickCounter >= 4) {
             tickCounter = 0;
             const newCandle = {
@@ -136,35 +151,122 @@ function App() {
     return () => clearInterval(interval);
   }, [marketBias]);
 
+  // SISTEM REGISTER
+  const handleRegister = (e) => {
+    e.preventDefault();
+    setAuthError("");
+    const cleanUser = authUsername.trim();
+
+    if (!cleanUser || !authPassword) {
+      setAuthError("Sila lengkapkan username dan password.");
+      return;
+    }
+
+    if (usersDb.some((u) => u.username.toLowerCase() === cleanUser.toLowerCase())) {
+      setAuthError("Username ini sudah didaftarkan!");
+      return;
+    }
+
+    const newUser = {
+      username: cleanUser,
+      password: authPassword,
+      fiatBalance: 0.0, // Bermula dengan RM 0 (top-up guna PIN)
+      bakaBalance: 0.0,
+      trades: []
+    };
+
+    setUsersDb([...usersDb, newUser]);
+    setCurrentUsername(cleanUser);
+    setShowAuthModal(false);
+    setAuthUsername("");
+    setAuthPassword("");
+    showToast(`🎉 Selamat datang, ${cleanUser}! Akaun anda berjaya didaftar.`);
+  };
+
+  // SISTEM LOGIN
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setAuthError("");
+    const cleanUser = authUsername.trim();
+
+    const existingUser = usersDb.find(
+      (u) => u.username.toLowerCase() === cleanUser.toLowerCase() && u.password === authPassword
+    );
+
+    if (!existingUser) {
+      setAuthError("Username atau Password salah!");
+      return;
+    }
+
+    setCurrentUsername(existingUser.username);
+    setShowAuthModal(false);
+    setAuthUsername("");
+    setAuthPassword("");
+    showToast(`Log masuk berjaya sebagai ${existingUser.username}`);
+  };
+
+  // SISTEM LOGOUT
+  const handleLogout = () => {
+    setCurrentUsername("");
+    setShowAuthModal(true);
+    setAuthTab("login");
+    showToast("Anda telah log keluar.");
+  };
+
+  // KEMAS KINI BAKI PENGGUNA TERKINI DI DATABASE
+  const updateCurrentUserData = (updatedFields) => {
+    if (!currentUser) return;
+    setUsersDb((prev) =>
+      prev.map((u) => (u.username === currentUser.username ? { ...u, ...updatedFields } : u))
+    );
+  };
+
   // Transaksi Beli / Jual
   const handleExecuteTrade = (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const qty = parseFloat(tradeAmount);
     if (!qty || qty <= 0) return;
 
     if (orderType === "buy") {
       const cost = +(qty * price).toFixed(2);
-      if (fiatBalance < cost) {
-        showToast("Baki RM tidak cukup! Sila tebus PIN daripada Admin.");
+      if (currentUser.fiatBalance < cost) {
+        showToast("Baki RM tidak mencukupi! Sila tebus PIN daripada Admin.");
         return;
       }
-      setFiatBalance((b) => +(b - cost).toFixed(2));
-      setBakaBalance((b) => +(b + qty).toFixed(4));
-      
-      const newOrder = { id: Date.now(), type: "BUY", qty, price, total: cost, time: new Date().toLocaleTimeString() };
-      setOrderHistory((prev) => [newOrder, ...prev.slice(0, 15)]);
+
+      const newFiat = +(currentUser.fiatBalance - cost).toFixed(2);
+      const newBaka = +(currentUser.bakaBalance + qty).toFixed(4);
+      const newTrade = { id: Date.now(), type: "BUY", qty, price, total: cost, time: new Date().toLocaleTimeString() };
+
+      updateCurrentUserData({
+        fiatBalance: newFiat,
+        bakaBalance: newBaka,
+        trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
+      });
+
       showToast(`Berjaya Beli ${qty} $BAKA (RM ${cost})`);
     } else {
-      if (bakaBalance < qty) {
+      if (currentUser.bakaBalance < qty) {
         showToast("Baki $BAKA tidak mencukupi!");
         return;
       }
-      const gains = +(qty * price).toFixed(2);
-      setBakaBalance((b) => +(b - qty).toFixed(4));
-      setFiatBalance((b) => +(b + gains).toFixed(2));
 
-      const newOrder = { id: Date.now(), type: "SELL", qty, price, total: gains, time: new Date().toLocaleTimeString() };
-      setOrderHistory((prev) => [newOrder, ...prev.slice(0, 15)]);
+      const gains = +(qty * price).toFixed(2);
+      const newBaka = +(currentUser.bakaBalance - qty).toFixed(4);
+      const newFiat = +(currentUser.fiatBalance + gains).toFixed(2);
+      const newTrade = { id: Date.now(), type: "SELL", qty, price, total: gains, time: new Date().toLocaleTimeString() };
+
+      updateCurrentUserData({
+        fiatBalance: newFiat,
+        bakaBalance: newBaka,
+        trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
+      });
+
       showToast(`Berjaya Jual ${qty} $BAKA (+RM ${gains})`);
     }
     setTradeAmount("");
@@ -173,6 +275,11 @@ function App() {
   // Tebus PIN
   const handleRedeemPin = (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const cleanCode = inputPinCode.trim().toUpperCase();
     const targetPin = pinDatabase.find((p) => p.code.toUpperCase() === cleanCode);
 
@@ -186,18 +293,23 @@ function App() {
       return;
     }
 
-    setFiatBalance((b) => +(b + targetPin.value).toFixed(2));
+    // Tambah nilai ke baki pengguna di database
+    updateCurrentUserData({
+      fiatBalance: +(currentUser.fiatBalance + targetPin.value).toFixed(2)
+    });
+
+    // Tandakan kod PIN sebagai DIGUNAKAN
     setPinDatabase((prev) =>
       prev.map((p) =>
         p.code.toUpperCase() === cleanCode
-          ? { ...p, status: "USED", usedBy: username, usedAt: new Date().toLocaleTimeString() }
+          ? { ...p, status: "USED", usedBy: currentUser.username, usedAt: new Date().toLocaleTimeString() }
           : p
       )
     );
 
     setInputPinCode("");
     setShowRedeemModal(false);
-    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
+    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan ke akaun anda!`);
   };
 
   // Admin: Jana PIN RM5
@@ -261,16 +373,14 @@ function App() {
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // Skala untuk Candlestick & Line SVG
+  // Skala Candlestick & Line
   const allCandleHighs = candles.map((c) => c.high);
   const allCandleLows = candles.map((c) => c.low);
   const minCandle = Math.min(...allCandleLows) * 0.99;
   const maxCandle = Math.max(...allCandleHighs) * 1.01;
   const candleRange = maxCandle - minCandle || 1;
-
   const getY = (val) => 220 - ((val - minCandle) / candleRange) * 190;
 
-  // Skala Line Chart
   const minP = Math.min(...priceHistory) * 0.98;
   const maxP = Math.max(...priceHistory) * 1.02;
   const linePoints = priceHistory.map((val, idx) => {
@@ -295,19 +405,31 @@ function App() {
           <div>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Exchange</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Sistem Dagangan Candlestick & Baucar RM5
+              Sistem Pengguna Berdaftar & Candlestick Live
             </p>
           </div>
         </div>
 
         <div className="nav-right">
-          <button className="btn-pill btn-user mono" onClick={() => setShowUserModal(true)}>
-            <User size={15} /> {username}
-          </button>
+          {currentUser ? (
+            <>
+              <button className="btn-pill btn-user mono">
+                <User size={15} /> {currentUser.username}
+              </button>
 
-          <button className="btn-pill btn-redeem mono" onClick={() => setShowRedeemModal(true)}>
-            <KeyRound size={15} /> Tebus PIN (RM5)
-          </button>
+              <button className="btn-pill btn-redeem mono" onClick={() => setShowRedeemModal(true)}>
+                <KeyRound size={15} /> Tebus PIN (RM5)
+              </button>
+
+              <button className="btn-pill btn-logout mono" onClick={handleLogout} title="Log Keluar">
+                <LogOut size={15} /> Keluar
+              </button>
+            </>
+          ) : (
+            <button className="btn-pill btn-user mono" onClick={() => setShowAuthModal(true)}>
+              <LogIn size={15} /> Log Masuk / Daftar
+            </button>
+          )}
 
           <button className="btn-pill btn-admin mono" onClick={() => setShowAdmin(true)}>
             {isAdminAuth ? <Unlock size={15} /> : <Lock size={15} />} Admin (200200)
@@ -320,31 +442,31 @@ function App() {
         <div className="card">
           <span className="stat-label mono">Baki Modal Tunai (MYR)</span>
           <div className="stat-val mono" style={{ color: "#fff" }}>
-            RM {fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+            RM {currentUser ? currentUser.fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            Beli PIN daripada Admin untuk top-up
+            Tebus PIN untuk tambah modal RM
           </span>
         </div>
 
         <div className="card">
           <span className="stat-label mono">Pegangan $BAKA</span>
           <div className="stat-val mono" style={{ color: "var(--green)" }}>
-            {bakaBalance.toFixed(4)} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
+            {currentUser ? currentUser.bakaBalance.toFixed(4) : "0.0000"} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
           </div>
         </div>
 
         <div className="card">
           <span className="stat-label mono">Nilai Bersih Portfolio</span>
           <div className="stat-val mono" style={{ color: "var(--gold)" }}>
-            RM {(fiatBalance + (bakaBalance * price)).toLocaleString("en-MY", { minimumFractionDigits: 2 })}
+            RM {currentUser ? (currentUser.fiatBalance + (currentUser.bakaBalance * price)).toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
           </div>
         </div>
       </section>
 
       {/* Trading Grid */}
       <div className="trading-grid">
-        {/* Graf Carta Pasaran (Candlestick / Line) */}
+        {/* Graf Carta Pasaran */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
@@ -354,7 +476,6 @@ function App() {
               </div>
             </div>
 
-            {/* Butang Tukar Mod Candlestick / Line */}
             <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
               <div className="chart-mode-group">
                 <button 
@@ -381,7 +502,6 @@ function App() {
             </div>
           </div>
 
-          {/* Info Bar OHLC */}
           {chartMode === "candle" && (
             <div className="ohlc-bar mono">
               <span>O: <strong style={{ color: "#fff" }}>{latestCandle.open.toFixed(3)}</strong></span>
@@ -391,10 +511,8 @@ function App() {
             </div>
           )}
 
-          {/* Paparan Graf SVG */}
           <div className="chart-box">
             {chartMode === "candle" ? (
-              // Paparan Candlestick SVG
               <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
                 {candles.map((c, i) => {
                   const candleWidth = 14;
@@ -412,7 +530,6 @@ function App() {
 
                   return (
                     <g key={c.id}>
-                      {/* Sumbu Lilin (Wick) */}
                       <line
                         x1={x + candleWidth / 2}
                         y1={yHigh}
@@ -421,7 +538,6 @@ function App() {
                         stroke={candleColor}
                         strokeWidth="1.5"
                       />
-                      {/* Badan Lilin (Body) */}
                       <rect
                         x={x}
                         y={rectY}
@@ -435,7 +551,6 @@ function App() {
                 })}
               </svg>
             ) : (
-              // Paparan Line Chart SVG
               <svg viewBox="0 0 500 220" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
                 <polyline
                   fill="none"
@@ -489,11 +604,80 @@ function App() {
             </div>
 
             <button type="submit" className={`btn-action-order mono ${orderType}`}>
-              {orderType === "buy" ? "Sahkan Beli $BAKA" : "Sahkan Jual $BAKA"}
+              {currentUser
+                ? orderType === "buy" ? "Sahkan Beli $BAKA" : "Sahkan Jual $BAKA"
+                : "Log Masuk Untuk Berdagang"}
             </button>
           </form>
         </div>
       </div>
+
+      {/* MODAL AUTH (LOGIN & REGISTER) */}
+      {showAuthModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>Pusat Akses Akaun</h3>
+              {currentUser && (
+                <button onClick={() => setShowAuthModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            <div className="auth-tabs mono">
+              <button 
+                className={`auth-tab-btn ${authTab === "login" ? "active" : ""}`}
+                onClick={() => { setAuthTab("login"); setAuthError(""); }}
+              >
+                <LogIn size={14} style={{ display: "inline", marginRight: "4px" }} /> Log Masuk
+              </button>
+              <button 
+                className={`auth-tab-btn ${authTab === "register" ? "active" : ""}`}
+                onClick={() => { setAuthTab("register"); setAuthError(""); }}
+              >
+                <UserPlus size={14} style={{ display: "inline", marginRight: "4px" }} /> Daftar Akaun
+              </button>
+            </div>
+
+            {authError && (
+              <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "var(--red)", padding: "0.6rem", borderRadius: "6px", fontSize: "0.82rem", marginBottom: "1rem" }}>
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={authTab === "login" ? handleLogin : handleRegister}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>USERNAME</label>
+                <input
+                  type="text"
+                  className="input-styled mono"
+                  placeholder="Cth: AbuTrader"
+                  value={authUsername}
+                  onChange={(e) => setAuthUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>PASSWORD</label>
+                <input
+                  type="password"
+                  className="input-styled mono"
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => setAuthPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button type="submit" className="btn-action-order mono buy">
+                {authTab === "login" ? "Log Masuk Sekarang" : "Cipta Akaun & Mula Dagang"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL TEBUS PIN (RM5) */}
       {showRedeemModal && (
@@ -640,39 +824,6 @@ function App() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL TUKAR AKAUN */}
-      {showUserModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ fontSize: "1.1rem", marginBottom: "0.8rem" }}>Tukar Akaun Trader</h3>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              Masukkan nama pengguna untuk memuatkan baki akaun berkenaan:
-            </p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (tempUser.trim()) {
-                setUsername(tempUser.trim());
-                setShowUserModal(false);
-                setTempUser("");
-                showToast(`Log masuk sebagai ${tempUser.trim()}`);
-              }
-            }}>
-              <input
-                type="text"
-                className="input-styled mono"
-                placeholder="cth: Abu_Trader"
-                value={tempUser}
-                onChange={(e) => setTempUser(e.target.value)}
-                required
-              />
-              <button type="submit" className="btn-action-order mono buy" style={{ marginTop: "1rem" }}>
-                Tukar Akaun
-              </button>
-            </form>
           </div>
         </div>
       )}
