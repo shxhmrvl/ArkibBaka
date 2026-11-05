@@ -1,527 +1,340 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { createRoot } from 'react-dom/client'
-import { AnimatePresence, motion } from 'framer-motion'
-import {
-  Search, Play, Pause, Volume2, VolumeX, Bookmark, BookmarkCheck,
-  Heart, ArrowRight, ArrowUpRight, Compass, Flame, Gamepad2,
-  X, Check, Music2, Disc3
-} from 'lucide-react'
-import './style.css'
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom/client";
+import "./style.css";
+import { 
+  Server, Copy, Check, MessageSquare, Heart, Send, 
+  Gamepad2, Coins, ShieldCheck, MapPin 
+} from "lucide-react";
 
-// Laluan fail audio (letakkan departure.mp3 di dalam folder public/)
-const BGM_URL = '/departure.mp3'
+// Maklumat rasmi pelayan BakaCrew Malaysia
+const SERVER_INFO = {
+  name: "BakaCrew @ BakaCraft",
+  ip: "baka.skyes.me",
+  port: "19205",
+  platform: "Bedrock Edition",
+  location: "Malaysia 🇲🇾",
+};
 
-const yearsData = [
+// Data asas post berkaitan pengalaman dalam server BakaCrew
+const INITIAL_POSTS = [
   {
-    year: '2018', title: 'The Spark & The Voice Call', tag: 'ORIGIN',
-    desc: 'Bermula dari Steam lobby dan Discord kecil dengan 7 orang rakan. Tempat gelaran Baka mula tercipta.',
-    highlights: ['Server Discord pertama dibuka', '7 ahli pengasas asal', 'Kemenangan 5-stack pertama dirai'],
-    stats: { members: 7, voiceHours: '140h', mainGame: 'Dota 2 / CS:GO' }
+    id: 1,
+    username: "Lightinityy",
+    text: "Selamat datang ke BakaCrew Malaysia! Server Bedrock SMP rasmi untuk satukan komuniti Minecraft tempatan. Sila patuhi peraturan dan selamat ber-survival! 🌲✨",
+    likes: 8,
+    isLiked: false,
+    timestamp: "Pengumuman Admin",
+    comments: [
+      { id: 101, username: "Steve_MY", text: "Terbaik! Tak sabar nak bina base besar kat spawn." }
+    ]
   },
   {
-    year: '2019', title: 'Anime Seasons & Late Matchups', tag: 'CONNECTION',
-    desc: 'Tayangan anime setiap Jumaat malam dan perlawanan kompetitif hingga awal pagi.',
-    highlights: ['Watch party anime rasmi pertama', 'Komuniti mencecah 50 ahli', 'Soundboard khas komuniti dilancar'],
-    stats: { members: 54, voiceHours: '850h', mainGame: 'Apex Legends' }
-  },
-  {
-    year: '2020', title: 'The Sanctuary in Isolation', tag: 'SANCTUARY',
-    desc: 'Tatkala dunia berkurung, Discord Baka menjadi tempat selamat untuk bergelak tawa 24/7.',
-    highlights: ['Lobi Among Us sampai jam 5 pagi', 'Server rasmi Minecraft dibuka', 'Mencecah 200 ahli aktif'],
-    stats: { members: 210, voiceHours: '4,200h', mainGame: 'Among Us / Genshin' }
-  },
-  {
-    year: '2021', title: 'Bot Experiments & Guild Tourneys', tag: 'EVOLUTION',
-    desc: 'Kelahiran bot buatan sendiri BakaBot dan penganjuran turnamen dalaman.',
-    highlights: ['Turnamen Valorant komuniti', 'BakaBot v1 beroperasi', 'Perjumpaan fizikal pertama ahli'],
-    stats: { members: 340, voiceHours: '5,600h', mainGame: 'Valorant' }
-  },
-  {
-    year: '2022', title: 'The Golden Multiverse', tag: 'EXPANSION',
-    desc: 'Projek kolaborasi lukisan, perkongsian muzik dan aktiviti merentasi zon masa.',
-    highlights: ['Kehadiran ke acara konvensyen anime', 'Buku seni komuniti (Zine)', 'Projek binaan mega Minecraft'],
-    stats: { members: 520, voiceHours: '6,100h', mainGame: 'Minecraft / Elden Ring' }
-  },
-  {
-    year: '2023', title: 'Quiet Echoes & Deeper Bonds', tag: 'INTIMACY',
-    desc: 'Persahabatan semakin matang tatkala masing-masing mula melangkah ke alam kerjaya.',
-    highlights: ['Kenduri perkahwinan ahli pertama', 'Saluran Arkib dibuka', 'Sesi lepak santai Lo-Fi'],
-    stats: { members: 560, voiceHours: '3,800h', mainGame: 'Baldur’s Gate 3' }
-  },
-  {
-    year: '2024', title: 'The Time Capsule Initiative', tag: 'REFLECTION',
-    desc: 'Proses mengumpul semula tangkap layar lama, audio clip, dan memori silam bermula.',
-    highlights: ['Projek Arkib diasaskan secara rasmi', 'Throwback LAN party', 'Buku memori digital disiapkan'],
-    stats: { members: 580, voiceHours: '2,900h', mainGame: 'Helldivers 2' }
-  },
-  {
-    year: '2025', title: 'Preserving the Narrative', tag: 'LEGACY',
-    desc: 'Membina rumah digital kekal untuk mengabadikan setiap kenangan warga Baka.',
-    highlights: ['Domain Arkib:Baka didaftarkan', 'Manifesto pemeliharaan digubal', 'Lebih 1,000 foto diarkibkan'],
-    stats: { members: 600, voiceHours: '2,400h', mainGame: 'Monster Hunter' }
-  },
-  {
-    year: '2026', title: 'The Living Digital Museum', tag: 'PERMANENCE',
-    desc: 'Arkib dibuka secara rasmi. Segala tawa dan air mata kekal terpahat buat selamanya.',
-    highlights: ['Laman memorial rasmi dilancarkan', 'Buku tamu awam beroperasi', 'Kapsul masa dikunci abadi'],
-    stats: { members: '600+', voiceHours: '30,000h+', mainGame: 'Arkib:Baka' }
+    id: 2,
+    username: "AdibCraft",
+    text: "Ada sesiapa nak trade Netherite Ingot dengan Emerald? Saya tunggu di Spawn Market sekarang! 💎",
+    likes: 3,
+    isLiked: false,
+    timestamp: "2 jam lepas",
+    comments: []
   }
-]
+];
 
-const erasData = [
-  {
-    num: '01', years: '2018 — 2019', title: 'Permulaan & Sembang 3 Pagi',
-    desc: 'Zaman permulaan 7 orang sahabat bermain CS:GO dan berbincang tentang episod anime kegemaran.',
-    stats: ['7 Pengasas Asal', 'CS:GO & Dota 2', 'Lobi Penuh Pertama']
-  },
-  {
-    num: '02', years: '2020 — 2021', title: 'Keluarga Tatkala Kuarantin',
-    desc: 'Saluran suara sentiasa hidup sepanjang hari menemani ahli yang belajar dan bekerja dari rumah.',
-    stats: ['Zaman Kegemilangan Among Us', 'Dunia Minecraft v1', '300+ Ahli']
-  },
-  {
-    num: '03', years: '2022 — 2023', title: 'Turnamen & Komuniti Kreatif',
-    desc: 'Pelbagai acara pertandingan e-sukan, perjumpaan luar, dan bot ciptaan sendiri diperkenalkan.',
-    stats: ['Turnamen Valorant', 'BakaBot v2', 'Anime Expo Meetup']
-  },
-  {
-    num: '04', years: '2024 — 2026', title: 'Arkib Abadi & Warisan',
-    desc: 'Usaha memelihara segala memori agar tidak hilang ditelan arus peredaran masa.',
-    stats: ['Muzium Digital Arkib', 'Buku Tamu Terbuka', 'Kenangan Abadi']
-  }
-]
-
-const initialMemories = [
-  {
-    id: 'm1', title: 'Clutch 4:20 Pagi Yang Menyelamatkan Pasukan', year: '2019', category: 'Gaming', author: 'Kaelen',
-    desc: 'Pusingan penentu 14-15, tinggal seorang diri dengan hanya 12 HP. Seluruh voice chat senyap membisu.',
-    story: 'Tiada siapa berani bernafas selama 45 saat. Bila bomb berjaya di-defuse, suara jeritan gembira bergema sampai jiran bilik sebelah ketuk pintu!',
-    symbol: '⚡', reactions: { heart: 42, fire: 18, gg: 35 }
-  },
-  {
-    id: 'm2', title: 'Watch Party Demon Slayer Ep 19', year: '2019', category: 'Anime', author: 'Aura',
-    desc: 'Lebih 20 orang menatap skrin serentak. Babak Hinokami Kagura membuatkan semua terpaku.',
-    story: 'Kira 3, 2, 1 serentak sebelum tekan Play. Selepas episod tamat, semua terdiam sebelum sambung sembang sampai Subuh.',
-    symbol: '🌸', reactions: { heart: 61, fire: 29, gg: 12 }
-  },
-  {
-    id: 'm3', title: 'Binaan Kota Megah Minecraft', year: '2020', category: 'Creative', author: 'MochiBuilder',
-    desc: 'Dua minggu kuarantin dihabiskan melombong batu untuk membina istana impian komuniti.',
-    story: 'Bila bumbung kayu disambar kilat dan terbakar jam 2 pagi, semua ahli bergegas online bawa baldi air untuk padamkan api!',
-    symbol: '🏰', reactions: { heart: 55, fire: 22, gg: 40 }
-  }
-]
-
-const initialGuestbook = [
-  { id: 1, name: 'Zane_99', tag: 'Gaming', msg: 'Tahun 2020 adalah tahun yang sukar, tapi lepak dengan korang dalam VC buat saya kuat. Terima kasih Baka.', date: '2026-03-14' },
-  { id: 2, name: 'CherriBlossom', tag: 'Nostalgia', msg: 'Masih rindu malam-malam main Minecraft sambil dengar lagu Naruto sama-sama.', date: '2026-02-28' }
-]
-
-export default function App() {
-  const [path, setPath] = useState(location.hash.slice(1) || '/')
-  const [selectedYear, setSelectedYear] = useState('2018')
-  const [memories, setMemories] = useState(initialMemories)
-  const [activeModalMemory, setActiveModalMemory] = useState(null)
+function App() {
+  const [copiedIP, setCopiedIP] = useState(false);
+  const [copiedPort, setCopiedPort] = useState(false);
   
-  // BGM Naruto Audio Player State
-  const [isPlaying, setIsPlaying] = useState(false)
-  const audioRef = useRef(null)
+  // Status live server menggunakan API Bedrock
+  const [serverStatus, setServerStatus] = useState({ online: false, players: 0, max: 30 });
 
-  const [guestEntries, setGuestEntries] = useState(initialGuestbook)
-  const [guestForm, setGuestForm] = useState({ name: '', tag: 'Gaming', msg: '' })
+  // Simpan data post di localStorage komputer
+  const [posts, setPosts] = useState(() => {
+    const saved = localStorage.getItem("bakacrew_posts");
+    return saved ? JSON.parse(saved) : INITIAL_POSTS;
+  });
 
-  const navigate = p => { 
-    location.hash = p
-    setPath(p)
-    window.scrollTo({ top: 0, behavior: 'smooth' }) 
-  }
+  const [authorName, setAuthorName] = useState("");
+  const [postContent, setPostContent] = useState("");
+  const [commentInputs, setCommentInputs] = useState({});
 
   useEffect(() => {
-    const handleHash = () => setPath(location.hash.slice(1) || '/')
-    window.addEventListener('hashchange', handleHash)
-    return () => window.removeEventListener('hashchange', handleHash)
-  }, [])
+    localStorage.setItem("bakacrew_posts", JSON.stringify(posts));
+  }, [posts]);
 
-  const toggleMusic = () => {
-    if (!audioRef.current) return
-    if (isPlaying) {
-      audioRef.current.pause()
-      setIsPlaying(false)
+  // Semak status pelayan Bedrock secara langsung
+  useEffect(() => {
+    fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_INFO.ip}:${SERVER_INFO.port}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setServerStatus({
+          online: data.online,
+          players: data.players?.online || 0,
+          max: data.players?.max || 30
+        });
+      })
+      .catch(() => setServerStatus({ online: false, players: 0, max: 30 }));
+  }, []);
+
+  const copyText = (text, type) => {
+    navigator.clipboard.writeText(text);
+    if (type === "ip") {
+      setCopiedIP(true);
+      setTimeout(() => setCopiedIP(false), 2000);
     } else {
-      audioRef.current.play()
-        .then(() => setIsPlaying(true))
-        .catch(err => {
-          console.warn('Playback error or file missing:', err)
-          alert('Sila letakkan fail lagu "departure.mp3" di dalam folder public/ projek anda!')
-        })
+      setCopiedPort(true);
+      setTimeout(() => setCopiedPort(false), 2000);
     }
-  }
+  };
 
-  const reactToMemory = (memId, type) => {
-    setMemories(prev => prev.map(m => {
-      if (m.id === memId) {
-        return { ...m, reactions: { ...m.reactions, [type]: (m.reactions?.[type] || 0) + 1 } }
-      }
-      return m
-    }))
-    if (activeModalMemory && activeModalMemory.id === memId) {
-      setActiveModalMemory(prev => ({
-        ...prev,
-        reactions: { ...prev.reactions, [type]: (prev.reactions?.[type] || 0) + 1 }
-      }))
-    }
-  }
+  const handleCreatePost = (e) => {
+    e.preventDefault();
+    if (!authorName.trim() || !postContent.trim()) return;
 
-  const handleGuestSubmit = e => {
-    e.preventDefault()
-    if (!guestForm.name.trim() || !guestForm.msg.trim()) return
-    const next = [
-      { id: Date.now(), name: guestForm.name.trim(), tag: guestForm.tag, msg: guestForm.msg.trim(), date: new Date().toISOString().split('T')[0] },
-      ...guestEntries
-    ]
-    setGuestEntries(next)
-    setGuestForm({ name: '', tag: 'Gaming', msg: '' })
-  }
+    const newPost = {
+      id: Date.now(),
+      username: authorName.trim(),
+      text: postContent.trim(),
+      likes: 0,
+      isLiked: false,
+      timestamp: "Baru sahaja",
+      comments: []
+    };
 
-  const selectedYearObj = yearsData.find(y => y.year === selectedYear) || yearsData[0]
+    setPosts([newPost, ...posts]);
+    setPostContent("");
+  };
+
+  const toggleLike = (postId) => {
+    setPosts(
+      posts.map((p) => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            isLiked: !p.isLiked,
+            likes: p.isLiked ? p.likes - 1 : p.likes + 1
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleAddComment = (postId, e) => {
+    e.preventDefault();
+    const commentText = commentInputs[postId];
+    if (!commentText || !commentText.trim()) return;
+
+    setPosts(
+      posts.map((p) => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            comments: [
+              ...p.comments,
+              {
+                id: Date.now(),
+                username: authorName || "Pemain",
+                text: commentText.trim()
+              }
+            ]
+          };
+        }
+        return p;
+      })
+    );
+
+    setCommentInputs({ ...commentInputs, [postId]: "" });
+  };
 
   return (
-    <>
-      {/* Naruto BGM Audio Element */}
-      <audio 
-        ref={audioRef} 
-        src={BGM_URL} 
-        loop 
-        preload="auto"
-        onEnded={() => setIsPlaying(false)}
-      />
-
-      {/* Header */}
-      <header className="header">
-        <div className="container header-inner">
-          <button className="brand" onClick={() => navigate('/')}>
-            <div className="brand-mark">B.</div>
-            <div className="brand-text">ARKIB<span>:BAKA</span><small>MEMORIAL • 2018–2026</small></div>
-          </button>
-          <nav className="nav-links">
-            {[['Utama','/'],['Kronologi','/history'],['Era','/eras'],['Memori','/memories'],['Buku Tamu','/guestbook']].map(([t, p]) => (
-              <button key={p} className={`nav-link ${path === p ? 'active' : ''}`} onClick={() => navigate(p)}>{t}</button>
-            ))}
-          </nav>
-          
-          {/* Header BGM Pill */}
-          <button className={`bgm-chip ${isPlaying ? 'playing' : ''}`} onClick={toggleMusic} title="Naruto Shippuden OST">
-            <Disc3 className={isPlaying ? 'spin' : ''} size={15} />
-            <div className="bgm-chip-text">
-              <span className="bgm-title">Departure to Front Line</span>
-              <span className="bgm-sub">{isPlaying ? 'SEDANG DIMAINKAN' : 'TEKAN UNTUK DENGAR'}</span>
-            </div>
-            {isPlaying && (
-              <span className="wave-bars">
-                <span/><span/><span/>
-              </span>
-            )}
-          </button>
+    <div className="container">
+      {/* Navbar */}
+      <nav className="navbar">
+        <div className="logo-container">
+          <Server size={28} color="var(--primary)" />
+          <div>
+            <div className="logo-title">{SERVER_INFO.name}</div>
+          </div>
         </div>
-      </header>
+        <span className="edition-tag">Bedrock Only</span>
+      </nav>
 
-      <AnimatePresence mode="wait">
-        <motion.main key={path} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}>
-          {path === '/' && (
-            <>
-              {/* Kemas & Minimalist Hero Section */}
-              <section className="hero-clean">
-                <div className="hero-radial-bg" />
-                <div className="container hero-center">
-                  
-                  {/* Badges Bar */}
-                  <div className="hero-badges-row">
-                    <span className="clean-pill"><span className="pulse-dot" /> ARKIB DIGITAL 2018 — 2026</span>
-                    <span className="clean-pill sub">8 TAHUN PERJALANAN</span>
-                  </div>
+      {/* Hero Header */}
+      <div className="hero">
+        <div className="hero-badge">
+          <MapPin size={15} /> Komuniti Pelayan Minecraft {SERVER_INFO.location}
+        </div>
+        <h1>
+          Pusat Komuniti <span>BakaCrew SMP</span>
+        </h1>
+        <p>
+          Dedicated Server khas untuk menyatukan komuniti Bedrock Malaysia (MCPE, Windows, & Konsol). Bertemu rakan baharu dan bina legasi anda!
+        </p>
 
-                  {/* Main Title */}
-                  <h1 className="hero-main-title">
-                    Satu Komuniti.<br />
-                    <span>Sejuta Kenangan Abadi.</span>
-                  </h1>
-
-                  <p className="hero-lead">
-                    Dari saat pertama lobi game dicipta, gelak tawa larut malam dalam Discord, 
-                    hingga ke persahabatan yang kekal selamanya. Selamat datang ke arkib sejarah Baka.
-                  </p>
-
-                  {/* Action Buttons & Music Player Card */}
-                  <div className="hero-button-group">
-                    <button className="btn-glow" onClick={() => navigate('/history')}>
-                      Terokai Garis Masa <ArrowUpRight size={16} />
-                    </button>
-                    <button className={`btn-music-dock ${isPlaying ? 'active' : ''}`} onClick={toggleMusic}>
-                      {isPlaying ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
-                      <span>{isPlaying ? 'Hentikan Lagu' : 'Mainkan BGM Naruto'}</span>
-                    </button>
-                  </div>
-
-                  {/* Mini Now-Playing Card */}
-                  <div className="ost-indicator">
-                    <Music2 size={13} color="var(--accent)" />
-                    <span>OST: <b>Departure to the Front Lines (出陣)</b> — Yasuharu Takanashi</span>
-                  </div>
-
-                  {/* Stats Counter Kemas */}
-                  <div className="clean-stats-grid">
-                    <div className="clean-stat-box">
-                      <b>9</b>
-                      <small>BABAK SEJARAH</small>
-                    </div>
-                    <div className="clean-stat-box">
-                      <b>600+</b>
-                      <small>SAHABAT BERSATU</small>
-                    </div>
-                    <div className="clean-stat-box">
-                      <b>30,000h+</b>
-                      <small>MASA DI VOICE CHAT</small>
-                    </div>
-                    <div className="clean-stat-box">
-                      <b style={{ color: 'var(--emerald)' }}>KEKAL</b>
-                      <small>DIABADIKAN</small>
-                    </div>
-                  </div>
-
-                </div>
-              </section>
-
-              {/* Eras Overview */}
-              <section className="section">
-                <div className="container">
-                  <div className="section-header">
-                    <div>
-                      <div className="eyebrow">4 EPOCH KEGEMILANGAN</div>
-                      <h2 className="section-title">Perjalanan Rentas Zaman</h2>
-                      <p className="section-subtitle">Bagaimana sekumpulan kecil pemain game berkembang menjadi komuniti erat.</p>
-                    </div>
-                    <button className="btn-secondary" onClick={() => navigate('/eras')}>Lihat Semua Era <ArrowRight size={15} /></button>
-                  </div>
-                  <div className="eras-timeline-grid">
-                    {erasData.map(era => (
-                      <div className="era-card-detailed" key={era.num}>
-                        <span className="era-num">{era.num}</span>
-                        <div className="era-years">{era.years}</div>
-                        <h3 className="era-title">{era.title}</h3>
-                        <p style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>{era.desc}</p>
-                        <div className="era-stats-pill">
-                          {era.stats.map((s, idx) => <span className="stat-tag" key={idx}><b>•</b> {s}</span>)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            </>
-          )}
-
-          {path === '/history' && (
-            <div className="section">
-              <div className="container">
-                <div className="section-header">
-                  <div>
-                    <div className="eyebrow">KRONOLOGI 2018–2026</div>
-                    <h1 className="section-title">Garis Masa Arkib</h1>
-                    <p className="section-subtitle">Pilih tahun untuk membaca babak peristiwa yang pernah berlaku.</p>
-                  </div>
-                </div>
-                <div className="timeline-strip-container">
-                  <div className="timeline-strip">
-                    {yearsData.map(y => (
-                      <button key={y.year} className={`timeline-btn ${selectedYear === y.year ? 'active' : ''}`} onClick={() => setSelectedYear(y.year)}>
-                        <span className="year">{y.year}</span>
-                        <span className="tag">{y.tag}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="year-spotlight">
-                  <div>
-                    <div className="eyebrow">{selectedYearObj.tag} • BABAK {yearsData.indexOf(selectedYearObj) + 1}</div>
-                    <h3>{selectedYearObj.title}</h3>
-                    <p className="year-spotlight-desc">{selectedYearObj.desc}</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '24px' }}>
-                      <div className="mini-stat-card"><small>AHLI</small><b>{selectedYearObj.stats.members}</b></div>
-                      <div className="mini-stat-card"><small>MASA VC</small><b>{selectedYearObj.stats.voiceHours}</b></div>
-                      <div className="mini-stat-card"><small>GAME UTAMA</small><b>{selectedYearObj.stats.mainGame}</b></div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '13px', fontFamily: 'var(--font-mono)', color: 'var(--accent)', marginBottom: '14px' }}>PERISTIWA UTAMA</h4>
-                    <div className="year-highlights">
-                      {selectedYearObj.highlights.map((h, i) => (
-                        <div className="highlight-item" key={i}><Check size={15} /><span>{h}</span></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Kotak IP & Port */}
+        <div className="server-box">
+          <div className="ip-card">
+            <div>
+              <div className="ip-label">Server IP (Address)</div>
+              <div className="ip-value">{SERVER_INFO.ip}</div>
             </div>
-          )}
+            <button onClick={() => copyText(SERVER_INFO.ip, "ip")} className="btn-icon" title="Salin IP">
+              {copiedIP ? <Check size={18} color="var(--primary)" /> : <Copy size={18} />}
+            </button>
+          </div>
 
-          {path === '/eras' && (
-            <div className="section">
-              <div className="container">
-                <div className="section-header">
-                  <div>
-                    <div className="eyebrow">4 ERA KOMUNITI</div>
-                    <h1 className="section-title">Era-Era Kegemilangan</h1>
-                    <p className="section-subtitle">Fasa perubahan dari zaman permulaan sehingga terciptanya arkib digital ini.</p>
-                  </div>
-                </div>
-                <div className="eras-timeline-grid">
-                  {erasData.map(era => (
-                    <div className="era-card-detailed" key={era.num}>
-                      <span className="era-num">{era.num}</span>
-                      <div className="era-years">{era.years}</div>
-                      <h2 className="era-title">{era.title}</h2>
-                      <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '14px' }}>{era.desc}</p>
-                      <div className="era-stats-pill">
-                        {era.stats.map((s, idx) => <span className="stat-tag" key={idx}><b>•</b> {s}</span>)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <div className="ip-card">
+            <div>
+              <div className="ip-label">Port</div>
+              <div className="ip-value">{SERVER_INFO.port}</div>
             </div>
-          )}
+            <button onClick={() => copyText(SERVER_INFO.port, "port")} className="btn-icon" title="Salin Port">
+              {copiedPort ? <Check size={18} color="var(--primary)" /> : <Copy size={18} />}
+            </button>
+          </div>
 
-          {path === '/memories' && (
-            <div className="section">
-              <div className="container">
-                <div className="section-header">
-                  <div>
-                    <div className="eyebrow">KOLEKSI FRAGMEN</div>
-                    <h1 className="section-title">Memori Terpilih</h1>
-                    <p className="section-subtitle">Detik-detik bermakna yang disumbangkan oleh rakan-rakan komuniti.</p>
-                  </div>
-                </div>
-                <div className="memory-grid">
-                  {memories.map(item => (
-                    <article className="memory-card" key={item.id} onClick={() => setActiveModalMemory(item)}>
-                      <div className="card-header-art">
-                        <span className="card-badge tag-pill">{item.category}</span>
-                        <span className="card-year-badge">{item.year}</span>
-                        <div className="card-art-symbol">{item.symbol}</div>
-                      </div>
-                      <div className="card-body">
-                        <h3 className="card-title">{item.title}</h3>
-                        <p className="card-desc">{item.desc}</p>
-                        <div className="card-footer">
-                          <span>❤️ {item.reactions?.heart || 0}</span>
-                          <span>Oleh {item.author}</span>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {path === '/guestbook' && (
-            <div className="section">
-              <div className="container">
-                <div className="section-header">
-                  <div>
-                    <div className="eyebrow">BUKU KENANGAN</div>
-                    <h1 className="section-title">Tinggalkan Jejak</h1>
-                    <p className="section-subtitle">Tulis ucapan atau kenangan anda untuk diabadikan di dalam arkib ini.</p>
-                  </div>
-                </div>
-                <div className="guest-wrapper">
-                  <div className="guest-form-card">
-                    <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Tulis Catatan</h3>
-                    <form className="guest-form" onSubmit={handleGuestSubmit}>
-                      <div className="form-group">
-                        <label>NAMA / HANDLE DISCORD</label>
-                        <input className="form-input" required placeholder="Contoh: Kae_Baka" value={guestForm.name} onChange={e => setGuestForm({ ...guestForm, name: e.target.value })} />
-                      </div>
-                      <div className="form-group">
-                        <label>MESEJ ANDA</label>
-                        <textarea className="form-textarea" required rows={4} placeholder="Kongsi kenangan anda..." value={guestForm.msg} onChange={e => setGuestForm({ ...guestForm, msg: e.target.value })} />
-                      </div>
-                      <button className="btn-glow" type="submit">Hantar Catatan <ArrowUpRight size={15} /></button>
-                    </form>
-                  </div>
-                  <div className="guest-list">
-                    {guestEntries.map(entry => (
-                      <div className="guest-note" key={entry.id}>
-                        <div className="guest-note-top">
-                          <span style={{ fontWeight: '600', fontSize: '14px' }}>{entry.name}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{entry.date}</span>
-                        </div>
-                        <p className="guest-msg">{entry.msg}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </motion.main>
-      </AnimatePresence>
-
-      {/* Modal Popup Apabila Klik Kad Memori */}
-      {activeModalMemory && (
-        <div className="modal-overlay" onClick={() => setActiveModalMemory(null)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setActiveModalMemory(null)}><X size={18} /></button>
-            <div className="modal-hero"><span>{activeModalMemory.symbol}</span></div>
-            <div className="modal-content">
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                <span className="tag-pill">{activeModalMemory.category}</span>
-                <span className="tag-pill">{activeModalMemory.year}</span>
-                <span className="tag-pill">Oleh {activeModalMemory.author}</span>
-              </div>
-              <h2 style={{ fontSize: '22px', marginBottom: '12px' }}>{activeModalMemory.title}</h2>
-              <p style={{ fontSize: '14px', lineHeight: '1.7', color: 'var(--text-main)', marginBottom: '16px' }}>
-                {activeModalMemory.story || activeModalMemory.desc}
-              </p>
-              <div className="modal-reactions">
-                <button className="reaction-btn" onClick={() => reactToMemory(activeModalMemory.id, 'heart')}>
-                  <Heart size={14} /> {activeModalMemory.reactions?.heart || 0}
-                </button>
-                <button className="reaction-btn" onClick={() => reactToMemory(activeModalMemory.id, 'fire')}>
-                  <Flame size={14} /> {activeModalMemory.reactions?.fire || 0}
-                </button>
-                <button className="reaction-btn" onClick={() => reactToMemory(activeModalMemory.id, 'gg')}>
-                  <Gamepad2 size={14} /> GG {activeModalMemory.reactions?.gg || 0}
-                </button>
+          <div className="ip-card">
+            <div>
+              <div className="ip-label">Status Server</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.2rem" }}>
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: serverStatus.online ? "var(--primary)" : "var(--danger)",
+                    boxShadow: serverStatus.online ? "0 0 8px var(--primary)" : "none"
+                  }}
+                />
+                <span style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+                  {serverStatus.online
+                    ? `${serverStatus.players} / ${serverStatus.max} Pemain`
+                    : "Offline / Standby"}
+                </span>
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Floating Bottom Mini Player bila lagu dimainkan */}
-      {isPlaying && (
-        <div className="floating-music-bar">
-          <div className="floating-inner">
-            <Disc3 className="spin" size={18} color="var(--accent)" />
-            <div className="floating-text">
-              <b>Departure to the Front Line (出陣)</b>
-              <small>Naruto Shippuden OST • Yasuharu Takanashi</small>
+      {/* Keistimewaan Server */}
+      <div className="features-grid">
+        <div className="feature-item">
+          <Gamepad2 size={26} color="var(--primary)" />
+          <h4>SMP Survival</h4>
+          <p>Pengembaraan kelangsungan hidup tulen yang menyeronokkan bersama komuniti.</p>
+        </div>
+        <div className="feature-item">
+          <Coins size={26} color="var(--accent)" />
+          <h4>Sistem Ekonomi</h4>
+          <p>Beli, jual barang dan wujudkan kedai perniagaan pemain anda sendiri.</p>
+        </div>
+        <div className="feature-item">
+          <ShieldCheck size={26} color="var(--primary)" />
+          <h4>Komuniti Mesra</h4>
+          <p>Kawalan peraturan yang selesa dan selamat untuk semua peringkat umur.</p>
+        </div>
+      </div>
+
+      {/* Form Kongsi Post Komuniti */}
+      <div className="post-form-card">
+        <h3>
+          <MessageSquare size={20} color="var(--primary)" /> Kongsi Sesuatu di Komuniti BakaCrew
+        </h3>
+        <form onSubmit={handleCreatePost}>
+          <input
+            type="text"
+            className="input-field"
+            placeholder="Minecraft GamerTag / IGN anda (cth: SteveMY)"
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            required
+          />
+          <textarea
+            className="input-field"
+            placeholder="Kongsi projek binaan, cari team untuk mining, atau jemput pemain singgah ke kedai anda..."
+            value={postContent}
+            onChange={(e) => setPostContent(e.target.value)}
+            required
+          />
+          <button type="submit" className="btn-primary">
+            <Send size={16} /> Hantar Post
+          </button>
+        </form>
+      </div>
+
+      {/* Feed & Interaksi Post */}
+      <div>
+        <div className="feed-header">
+          <h3 style={{ fontSize: "1.2rem" }}>Papan Komuniti Terkini ({posts.length})</h3>
+        </div>
+
+        {posts.map((post) => (
+          <div key={post.id} className="post-card">
+            <div className="post-top">
+              <img
+                src={`https://mc-heads.net/avatar/${post.username}/42`}
+                alt={post.username}
+                className="avatar"
+                onError={(e) => {
+                  e.currentTarget.src = "https://mc-heads.net/avatar/Steve/42";
+                }}
+              />
+              <div>
+                <div className="author-name">{post.username}</div>
+                <div className="post-time">{post.timestamp}</div>
+              </div>
             </div>
-            <button className="btn-mini-pause" onClick={toggleMusic}><Pause size={14} /></button>
-          </div>
-        </div>
-      )}
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container footer-bottom">
-          <span>© 2018–2026 ARKIB:BAKA. SETIAP DETIK BERMAKNA.</span>
-          <span>DIMAJUKAN BERSAMA DENGAN KASIH SAYANG.</span>
-        </div>
-      </footer>
-    </>
-  )
+            <div className="post-text">{post.text}</div>
+
+            <div className="post-actions">
+              <button
+                className={`action-btn ${post.isLiked ? "liked" : ""}`}
+                onClick={() => toggleLike(post.id)}
+              >
+                <Heart size={16} fill={post.isLiked ? "currentColor" : "none"} />
+                {post.likes} Suka
+              </button>
+              <div className="action-btn">
+                <MessageSquare size={16} />
+                {post.comments.length} Komen
+              </div>
+            </div>
+
+            {/* Komen */}
+            <div className="comments-box">
+              {post.comments.map((c) => (
+                <div key={c.id} className="comment-row">
+                  <span className="comment-author">{c.username}:</span>
+                  <span>{c.text}</span>
+                </div>
+              ))}
+
+              <form onSubmit={(e) => handleAddComment(post.id, e)} className="comment-form">
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{ marginBottom: 0, padding: "0.45rem 0.8rem", fontSize: "0.85rem" }}
+                  placeholder="Balas komen..."
+                  value={commentInputs[post.id] || ""}
+                  onChange={(e) =>
+                    setCommentInputs({ ...commentInputs, [post.id]: e.target.value })
+                  }
+                />
+                <button type="submit" className="btn-primary" style={{ padding: "0.45rem 0.9rem" }}>
+                  Komen
+                </button>
+              </form>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
