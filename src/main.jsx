@@ -2,420 +2,461 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
-  Zap, Cpu, HardDrive, Terminal as TermIcon, 
-  Coins, Activity, Power, Volume2, VolumeX, 
-  Flame, Gauge, Globe, Send, CheckCircle2 
+  TrendingUp, TrendingDown, ShieldAlert, Lock, Unlock, 
+  DollarSign, Activity, Sliders, Wallet, CheckCircle2, 
+  ArrowUpRight, ArrowDownRight, RefreshCw, X 
 } from "lucide-react";
 
-// Senarai Rig Hardware Store
-const INITIAL_RIGS = [
-  { id: "cpu_tier1", name: "Threadripper CPU 64-Core", hash: 3.5, cost: 8, count: 0 },
-  { id: "gpu_tier2", name: "RTX 4090 Dual OC Edition", hash: 22.0, cost: 35, count: 0 },
-  { id: "asic_tier3", name: "BakaMiner S21 Hydro ASIC", hash: 95.0, cost: 180, count: 0 },
-  { id: "quantum_tier4", name: "Quantum Cryo-Cluster 9000", hash: 420.0, cost: 750, count: 0 }
-];
-
-// Senarai Mining Pools
-const POOLS = [
-  { id: "my", name: "BakaMY - Cyberjaya Node", ping: "8ms", diff: "0x0000FFFF" },
-  { id: "sg", name: "BakaSG - Jurong Datahub", ping: "16ms", diff: "0x0001A8F2" },
-  { id: "jp", name: "BakaJP - Tokyo Cluster", ping: "62ms", diff: "0x0002F4B0" }
-];
+const ADMIN_PIN = "200200";
 
 function App() {
-  const [balance, setBalance] = useState(() => {
-    const s = localStorage.getItem("bakacoin_bal_v2");
-    return s ? parseFloat(s) : 0.0;
-  });
+  // Status Pasaran
+  const [price, setPrice] = useState(2.50);
+  const [prevPrice, setPrevPrice] = useState(2.50);
+  const [priceHistory, setPriceHistory] = useState([2.30, 2.35, 2.42, 2.40, 2.48, 2.50]);
+  const [marketBias, setMarketBias] = useState("neutral"); // 'neutral', 'bull', 'bear'
 
-  const [blocks, setBlocks] = useState(() => {
-    const s = localStorage.getItem("bakacoin_blk_v2");
-    return s ? parseInt(s) : 0;
-  });
+  // Portfolio Pengguna
+  const [fiatBalance, setFiatBalance] = useState(10000.00); // RM Tunai
+  const [bakaBalance, setBakaBalance] = useState(250.00);   // $BAKA Coin
+  const [tradeAmount, setTradeAmount] = useState("");
+  const [orderType, setOrderType] = useState("buy"); // 'buy' or 'sell'
+  const [orderHistory, setOrderHistory] = useState([]);
 
-  const [rigs, setRigs] = useState(() => {
-    const s = localStorage.getItem("bakacoin_rigs_v2");
-    return s ? JSON.parse(s) : INITIAL_RIGS;
-  });
+  // Admin Dashboard States
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [customPriceInput, setCustomPriceInput] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
 
-  const [isMining, setIsMining] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [selectedPool, setSelectedPool] = useState(POOLS[0]);
-  const [overclock, setOverclock] = useState(100); // 100% standard
-  const [toast, setToast] = useState("");
-  const [walletTarget, setWalletTarget] = useState("");
-
-  const [logs, setLogs] = useState([
-    { id: 1, time: "INIT", text: "Protokol BakaCrypt-256 diaktifkan. Sambungan selamat sedia.", color: "#10b981" }
-  ]);
-
-  // Audio synthesizer beeps menggunakan Web Audio API
-  const playSound = (freq = 880, duration = 0.08) => {
-    if (!soundEnabled) return;
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    } catch {
-      // Audio tidak disokong atau belum ada interaksi pengguna
-    }
+  const showAlert = (msg) => {
+    setAlertMsg(msg);
+    setTimeout(() => setAlertMsg(""), 3000);
   };
 
-  const addLog = (text, color = "#94a3b8") => {
-    const time = new Date().toLocaleTimeString();
-    setLogs((prev) => [{ id: Date.now() + Math.random(), time, text, color }, ...prev.slice(0, 35)]);
-  };
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3000);
-  };
-
-  // Simpan data secara automatik
+  // Gelung Pergerakan Harga Automatik (Setiap 1.5 saat)
   useEffect(() => {
-    localStorage.setItem("bakacoin_bal_v2", balance.toString());
-    localStorage.setItem("bakacoin_blk_v2", blocks.toString());
-    localStorage.setItem("bakacoin_rigs_v2", JSON.stringify(rigs));
-  }, [balance, blocks, rigs]);
-
-  // Kiraan Hashrate Semasa
-  const baseHash = isMining ? 1.0 : 0.0;
-  const rigHash = rigs.reduce((sum, item) => sum + (item.count * item.hash), 0);
-  const totalHash = ((baseHash + rigHash) * (overclock / 100)).toFixed(1);
-
-  // Status Suhu & Kipas berdasarkan Overclock & Hashrate
-  const gpuTemp = Math.min(95, Math.floor(45 + (parseFloat(totalHash) * 0.15) + ((overclock - 100) * 0.5)));
-  const fanRpm = Math.min(4200, Math.floor(1200 + (gpuTemp * 32)));
-
-  // Gelung Perlombongan Utama (Mining Loop)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const hashVal = parseFloat(totalHash);
-      if (hashVal <= 0) return;
-
-      // Hasil lombong setiap detik
-      const earned = hashVal * 0.006;
-      setBalance((b) => +(b + earned).toFixed(4));
-
-      const nonce = Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
-      const blockHash = "0000" + Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-
-      // Kebarangkalian temui blok
-      if (Math.random() < 0.28) {
-        const reward = +(Math.random() * 0.8 + 0.2).toFixed(3);
-        setBalance((b) => +(b + reward).toFixed(4));
-        setBlocks((bl) => bl + 1);
-        playSound(1200, 0.15);
-        addLog(`💎 BLOK BARU DISAHKAN! Hash: ${blockHash.slice(0, 16)}... Ganjaran: +${reward} $BAKA`, "#f59e0b");
-      } else {
-        addLog(`[${selectedPool.id.toUpperCase()}] Nonce: 0x${nonce} -> Target disahkan (${totalHash} MH/s)`, "#06b6d4");
-      }
-    }, 1100);
-
-    return () => clearInterval(interval);
-  }, [totalHash, selectedPool]);
-
-  // Klik lombong manual
-  const handleManualMining = () => {
-    const reward = 0.08;
-    setBalance((b) => +(b + reward).toFixed(4));
-    playSound(650, 0.05);
-    addLog(`⚡ MANUAL HIT: 0.08 $BAKA diproses ke mempool.`, "#10b981");
-  };
-
-  // Pembelian Naik Taraf Rig
-  const buyRig = (rigId) => {
-    const target = rigs.find((r) => r.id === rigId);
-    if (!target || balance < target.cost) {
-      showToast("Baki $BAKA tidak mencukupi!");
-      return;
-    }
-
-    setBalance((b) => +(b - target.cost).toFixed(4));
-    setRigs((prev) =>
-      prev.map((r) => {
-        if (r.id === rigId) {
-          return { ...r, count: r.count + 1, cost: Math.round(r.cost * 1.35) };
+    const timer = setInterval(() => {
+      setPrice((current) => {
+        setPrevPrice(current);
+        
+        let deltaPercent = (Math.random() * 0.04 - 0.02); // turun naik rawak -2% ke +2%
+        
+        if (marketBias === "bull") {
+          deltaPercent += 0.025; // Trend positif kuat
+        } else if (marketBias === "bear") {
+          deltaPercent -= 0.025; // Trend negatif kuat
         }
-        return r;
-      })
-    );
-    playSound(1400, 0.1);
-    showToast(`Berjaya membeli ${target.name}!`);
-    addLog(`⚙️ HARDWARE: ${target.name} dipasang (+${target.hash} MH/s).`, "#10b981");
+
+        const next = Math.max(0.01, +(current * (1 + deltaPercent)).toFixed(4));
+        
+        setPriceHistory((hist) => [...hist.slice(-25), next]);
+        return next;
+      });
+    }, 1500);
+
+    return () => clearInterval(timer);
+  }, [marketBias]);
+
+  // Fungsi Transaksi Beli / Jual
+  const handleExecuteOrder = (e) => {
+    e.preventDefault();
+    const qty = parseFloat(tradeAmount);
+    if (!qty || qty <= 0) return;
+
+    if (orderType === "buy") {
+      const totalCost = +(qty * price).toFixed(2);
+      if (fiatBalance < totalCost) {
+        showAlert("Baki tunai RM tidak mencukupi!");
+        return;
+      }
+      setFiatBalance((b) => +(b - totalCost).toFixed(2));
+      setBakaBalance((b) => +(b + qty).toFixed(4));
+      
+      setOrderHistory((h) => [
+        { id: Date.now(), type: "BUY", qty, price, total: totalCost, time: new Date().toLocaleTimeString() },
+        ...h.slice(0, 15)
+      ]);
+      showAlert(`Berjaya Beli ${qty} $BAKA (RM ${totalCost})`);
+    } else {
+      if (bakaBalance < qty) {
+        showAlert("Baki $BAKA tidak mencukupi untuk dijual!");
+        return;
+      }
+      const totalGain = +(qty * price).toFixed(2);
+      setBakaBalance((b) => +(b - qty).toFixed(4));
+      setFiatBalance((b) => +(b + totalGain).toFixed(2));
+
+      setOrderHistory((h) => [
+        { id: Date.now(), type: "SELL", qty, price, total: totalGain, time: new Date().toLocaleTimeString() },
+        ...h.slice(0, 15)
+      ]);
+      showAlert(`Berjaya Jual ${qty} $BAKA (Dapat RM ${totalGain})`);
+    }
+    setTradeAmount("");
   };
 
-  const handleWithdraw = (e) => {
+  // Log Masuk Admin
+  const handleAdminAuth = (e) => {
     e.preventDefault();
-    if (!walletTarget.trim() || balance <= 0) return;
-    const sent = balance;
-    setBalance(0.0);
-    showToast(`Berjaya pindah ${sent.toFixed(3)} $BAKA!`);
-    addLog(`📤 PEMINDAHAN: ${sent.toFixed(3)} $BAKA dipindahkan ke ${walletTarget}.`, "#f59e0b");
-    setWalletTarget("");
+    if (pinInput === ADMIN_PIN) {
+      setIsAdminAuth(true);
+      setPinInput("");
+      showAlert("Akses Admin Disahkan!");
+    } else {
+      showAlert("PIN Salah! Akses ditolak.");
+      setPinInput("");
+    }
   };
+
+  // Tindakan Pengarah Pasaran (Admin Controls)
+  const triggerPump = (pct) => {
+    setPrice((curr) => {
+      const pumped = +(curr * (1 + pct / 100)).toFixed(4);
+      setPriceHistory((h) => [...h.slice(-25), pumped]);
+      return pumped;
+    });
+    showAlert(`🚀 PUMP AKTIF: Pasaran melonjak +${pct}%!`);
+  };
+
+  const triggerDump = (pct) => {
+    setPrice((curr) => {
+      const dumped = Math.max(0.001, +(curr * (1 - pct / 100)).toFixed(4));
+      setPriceHistory((h) => [...h.slice(-25), dumped]);
+      return dumped;
+    });
+    showAlert(`📉 DUMP AKTIF: Pasaran jatuh -${pct}%!`);
+  };
+
+  const applyCustomPrice = (e) => {
+    e.preventDefault();
+    const target = parseFloat(customPriceInput);
+    if (!target || target <= 0) return;
+    setPrice(target);
+    setPriceHistory((h) => [...h.slice(-25), target]);
+    setCustomPriceInput("");
+    showAlert(`Harga $BAKA ditetapkan ke RM ${target.toFixed(4)}!`);
+  };
+
+  // Pengiraan Graf SVG
+  const minVal = Math.min(...priceHistory) * 0.98;
+  const maxVal = Math.max(...priceHistory) * 1.02;
+  const points = priceHistory.map((val, idx) => {
+    const x = (idx / (priceHistory.length - 1)) * 500;
+    const y = 200 - ((val - minVal) / (maxVal - minVal || 1)) * 180;
+    return `${x},${y}`;
+  }).join(" ");
+
+  const isPositive = price >= prevPrice;
+  const totalNetWorth = +(fiatBalance + (bakaBalance * price)).toFixed(2);
 
   return (
-    <div className="wrapper">
-      {toast && <div className="toast-msg">{toast}</div>}
+    <div className="trade-container">
+      {/* Toast Notifikasi */}
+      {alertMsg && (
+        <div style={{
+          position: "fixed", bottom: "2rem", right: "2rem",
+          background: "#00c087", color: "#000", padding: "0.8rem 1.4rem",
+          borderRadius: "10px", fontWeight: 800, zIndex: 10000,
+          boxShadow: "0 0 20px rgba(0, 192, 135, 0.4)"
+        }}>
+          {alertMsg}
+        </div>
+      )}
 
-      {/* Top Navbar */}
-      <header className="card topbar">
-        <div className="brand-badge">
-          <div className="brand-icon">
-            <Coins size={24} color="#000" />
+      {/* Header Bar */}
+      <header className="header-bar">
+        <div className="logo-area">
+          <div className="logo-icon">
+            <Activity size={24} />
           </div>
           <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>BakaCoin Mining Terminal</h2>
-            <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Algoritma: BakaCrypt-256 (Stratum+TCP)
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.5px" }}>
+              BakaTrader <span style={{ color: "var(--green)", fontSize: "0.85rem" }}>EXCHANGE</span>
+            </h2>
+            <p className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              Pair: BAKA / MYR
             </p>
           </div>
         </div>
 
-        <div className="topbar-actions">
-          <button 
-            className="pill-btn mono" 
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            title="Buka/Tutup Audio"
-          >
-            {soundEnabled ? <Volume2 size={16} color="var(--primary)" /> : <VolumeX size={16} color="var(--muted)" />}
-            <span>{soundEnabled ? "Audio ON" : "Muted"}</span>
-          </button>
-
-          <div className="pill-btn mono" style={{ border: "1px solid var(--primary)" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--primary)" }} />
-            <span>Pool: {selectedPool.ping}</span>
-          </div>
-        </div>
+        <button 
+          className="btn-admin-trigger mono"
+          onClick={() => setShowAdminModal(true)}
+        >
+          {isAdminAuth ? <Unlock size={16} /> : <Lock size={16} />}
+          <span>{isAdminAuth ? "Admin Console (Aktif)" : "Admin Access"}</span>
+        </button>
       </header>
 
-      {/* Quick Status Metrics */}
-      <section className="metrics">
-        <div className="card">
-          <div className="metric-title"><Coins size={14} color="var(--gold)" /> Baki BakaCoin ($BAKA)</div>
-          <div className="metric-value mono" style={{ color: "var(--gold)" }}>
-            {balance.toFixed(4)}
+      {/* Ringkasan Dompet Pengguna */}
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div className="card-box">
+          <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>BAKI MODAL TUNAI</span>
+          <div className="mono" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#fff", marginTop: "0.3rem" }}>
+            RM {fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-            ≈ RM {(balance * 0.45).toFixed(2)} MYR
-          </span>
         </div>
 
-        <div className="card">
-          <div className="metric-title"><Zap size={14} color="var(--cyan)" /> Jumlah Kuasa Hash</div>
-          <div className="metric-value mono" style={{ color: "var(--cyan)" }}>
-            {totalHash} <span style={{ fontSize: "0.9rem" }}>MH/s</span>
+        <div className="card-box">
+          <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>PEGANGAN $BAKA COIN</span>
+          <div className="mono" style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--green)", marginTop: "0.3rem" }}>
+            {bakaBalance.toFixed(4)} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-            Efisiensi: 98.4%
-          </span>
         </div>
 
-        <div className="card">
-          <div className="metric-title"><Activity size={14} color="var(--primary)" /> Blok Diterbitkan</div>
-          <div className="metric-value mono" style={{ color: "var(--primary)" }}>
-            {blocks}
+        <div className="card-box">
+          <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>JUMLAH NILAI BERSIH (NET WORTH)</span>
+          <div className="mono" style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--gold)", marginTop: "0.3rem" }}>
+            RM {totalNetWorth.toLocaleString("en-MY", { minimumFractionDigits: 2 })}
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-            Kesukaran: {selectedPool.diff}
-          </span>
         </div>
       </section>
 
-      {/* Dashboard Utama: Mining Trigger & Terminal */}
-      <section className="dashboard-grid">
-        {/* Unit Rig Utama */}
-        <div className="card mining-rig">
-          <h3 style={{ fontSize: "1.15rem" }}>Pusat Kawalan Rig Perlombongan</h3>
-          <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: "0.2rem" }}>
-            Tekan sfera teras untuk melombong secara pantas atau mulakan enjin berterusan.
-          </p>
+      {/* Grid Pasaran: Graf Harga & Meja Pesanan */}
+      <div className="market-grid">
+        {/* Graf Live SVG */}
+        <div className="card-box">
+          <div className="chart-header">
+            <div>
+              <span className="mono" style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>HARGA PASARAN SEMASA</span>
+              <div className="price-big mono" style={{ color: isPositive ? "var(--green)" : "var(--red)" }}>
+                RM {price.toFixed(4)}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span className="mono" style={{ 
+                display: "inline-flex", alignItems: "center", gap: "0.2rem",
+                padding: "0.3rem 0.6rem", borderRadius: "6px",
+                background: isPositive ? "rgba(0,192,135,0.15)" : "rgba(244,63,94,0.15)",
+                color: isPositive ? "var(--green)" : "var(--red)",
+                fontWeight: 700, fontSize: "0.85rem"
+              }}>
+                {isPositive ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                {(((price - prevPrice) / prevPrice) * 100).toFixed(2)}%
+              </span>
+              <div className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
+                Mode: {marketBias.toUpperCase()}
+              </div>
+            </div>
+          </div>
 
-          <button
-            className={`pulse-circle ${isMining ? "active" : ""}`}
-            onClick={handleManualMining}
-          >
-            <Power size={50} />
-            <span className="mono" style={{ fontSize: "0.85rem", fontWeight: 800 }}>
-              {isMining ? "RIG AKTIF" : "KLIK MINE"}
-            </span>
-          </button>
+          {/* SVG Realtime Graph */}
+          <div className="chart-svg-container">
+            <svg viewBox="0 0 500 200" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+              <polyline
+                fill="none"
+                stroke={isPositive ? "var(--green)" : "var(--red)"}
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={points}
+              />
+            </svg>
+          </div>
+        </div>
 
-          <div style={{ display: "flex", gap: "0.8rem", marginBottom: "1rem" }}>
-            <button
-              onClick={() => setIsMining(!isMining)}
-              style={{
-                background: isMining ? "var(--red)" : "var(--primary)",
-                border: "none",
-                color: "#000",
-                fontWeight: 800,
-                padding: "0.6rem 1.4rem",
-                borderRadius: "8px",
-                cursor: "pointer"
-              }}
+        {/* Meja Pesanan (Order Desk) */}
+        <div className="card-box order-desk">
+          <div className="tab-switch">
+            <button 
+              className={`tab-btn buy ${orderType === "buy" ? "active" : ""}`}
+              onClick={() => setOrderType("buy")}
             >
-              {isMining ? "Hentikan Rig" : "Mulakan Auto-Mining"}
+              BELI $BAKA
+            </button>
+            <button 
+              className={`tab-btn sell ${orderType === "sell" ? "active" : ""}`}
+              onClick={() => setOrderType("sell")}
+            >
+              JUAL $BAKA
             </button>
           </div>
 
-          {/* Telemetri Suhu & Overclocking */}
-          <div className="telemetry mono">
-            <div className="gauge">
-              <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>SUHU RIG</span>
-              <div style={{ color: gpuTemp > 80 ? "var(--red)" : "var(--primary)", fontWeight: 700 }}>
-                {gpuTemp}°C
+          <form onSubmit={handleExecuteOrder} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div className="input-group">
+              <label className="input-label">Kuantiti BakaCoin</label>
+              <input
+                type="number"
+                step="any"
+                className="trade-input mono"
+                placeholder="0.00"
+                value={tradeAmount}
+                onChange={(e) => setTradeAmount(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ background: "#080b12", padding: "0.8rem", borderRadius: "8px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)" }}>
+                <span>Anggaran Jumlah:</span>
+                <span className="mono" style={{ color: "#fff", fontWeight: 700 }}>
+                  RM {((parseFloat(tradeAmount) || 0) * price).toFixed(2)}
+                </span>
               </div>
             </div>
 
-            <div className="gauge">
-              <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>KIPAS GPU</span>
-              <div style={{ color: "var(--cyan)", fontWeight: 700 }}>{fanRpm} RPM</div>
-            </div>
-
-            <div className="gauge">
-              <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>CLOCK RATE</span>
-              <div style={{ color: "var(--gold)", fontWeight: 700 }}>{overclock}%</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Terminal Konsol Langsung */}
-        <div className="terminal">
-          <div className="term-top">
-            <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <TermIcon size={14} color="var(--cyan)" /> Live Node Console
-            </span>
-            <span className="mono">ACTIVE POOL: {selectedPool.id.toUpperCase()}</span>
-          </div>
-
-          <div className="term-body mono">
-            {logs.map((log) => (
-              <div key={log.id} className="log-item">
-                <span style={{ color: "var(--muted)", marginRight: "0.4rem" }}>[{log.time}]</span>
-                <span style={{ color: log.color }}>{log.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pilihan Mining Pool */}
-      <section className="card" style={{ marginBottom: "1.5rem" }}>
-        <h3 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.8rem" }}>
-          <Globe size={18} color="var(--cyan)" /> Pilihan Rangkaian Pelayan (Stratum Mining Pools)
-        </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.8rem" }}>
-          {POOLS.map((pool) => (
-            <button
-              key={pool.id}
-              onClick={() => {
-                setSelectedPool(pool);
-                addLog(`🌐 POOL SWITCH: Bersambung ke ${pool.name} (${pool.ping}).`, "#06b6d4");
-              }}
-              className="card"
-              style={{
-                cursor: "pointer",
-                textAlign: "left",
-                border: selectedPool.id === pool.id ? "1px solid var(--primary)" : "1px solid var(--border)",
-                background: selectedPool.id === pool.id ? "rgba(16, 185, 129, 0.1)" : "rgba(0,0,0,0.2)"
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{pool.name}</div>
-              <div className="mono" style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "0.2rem" }}>
-                Latensi: <span style={{ color: "var(--primary)" }}>{pool.ping}</span>
-              </div>
+            <button type="submit" className={`btn-execute mono ${orderType}`}>
+              {orderType === "buy" ? "BUAT PESANAN BELI" : "BUAT PESANAN JUAL"}
             </button>
-          ))}
+          </form>
+        </div>
+      </div>
+
+      {/* Sejarah Transaksi */}
+      <section className="card-box">
+        <h3 style={{ fontSize: "1.05rem", marginBottom: "1rem" }}>Rekod Transaksi Pengguna</h3>
+        <div className="table-box">
+          <table>
+            <thead>
+              <tr>
+                <th>Masa</th>
+                <th>Jenis</th>
+                <th>Kuantiti</th>
+                <th>Harga Transaksi</th>
+                <th>Jumlah (RM)</th>
+              </tr>
+            </thead>
+            <tbody className="mono">
+              {orderHistory.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: "center", color: "var(--text-muted)", padding: "2rem" }}>
+                    Belum ada sebarang transaksi dibuat.
+                  </td>
+                </tr>
+              ) : (
+                orderHistory.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.time}</td>
+                    <td style={{ color: item.type === "BUY" ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
+                      {item.type}
+                    </td>
+                    <td>{item.qty} BAKA</td>
+                    <td>RM {item.price.toFixed(4)}</td>
+                    <td>RM {item.total.toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
 
-      {/* Kedai Perkakasan Hardware */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-          <HardDrive size={20} color="var(--primary)" /> Kedai Naik Taraf Rig (Hardware Market)
-        </h3>
-        <div className="market-grid">
-          {rigs.map((rig) => (
-            <div key={rig.id} className="card item-card">
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h4 style={{ fontSize: "0.98rem" }}>{rig.name}</h4>
-                  <span className="mono" style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.06)", padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
-                    x{rig.count}
-                  </span>
-                </div>
-                <div className="mono" style={{ fontSize: "0.82rem", color: "var(--cyan)", marginTop: "0.4rem" }}>
-                  +{rig.hash} MH/s kuasa lombong
-                </div>
+      {/* MODAL ADMIN DASHBOARD (PIN: 200200) */}
+      {showAdminModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--gold)" }}>
+                <ShieldAlert size={22} />
+                <h3 style={{ fontSize: "1.15rem" }}>BakaTrader Central Bank Admin</h3>
               </div>
-
-              <button
-                className="btn-buy-upgrade mono"
-                disabled={balance < rig.cost}
-                onClick={() => buyRig(rig.id)}
+              <button 
+                onClick={() => setShowAdminModal(false)}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
               >
-                <span>Beli Unit</span>
-                <span>{rig.cost} $BAKA</span>
+                <X size={20} />
               </button>
             </div>
-          ))}
+
+            {!isAdminAuth ? (
+              // Skrin Masukkan PIN
+              <form onSubmit={handleAdminAuth} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                  Sila masukkan PIN Pentadbir 6-digit untuk mengawal turun naik pasaran.
+                </p>
+                <input
+                  type="password"
+                  maxLength={6}
+                  className="trade-input mono"
+                  style={{ textAlign: "center", fontSize: "1.5rem", letterSpacing: "8px" }}
+                  placeholder="••••••"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value)}
+                  autoFocus
+                />
+                <button type="submit" className="btn-pump mono" style={{ width: "100%", padding: "0.8rem" }}>
+                  Sahkan PIN Pentadbir
+                </button>
+              </form>
+            ) : (
+              // Panel Kawalan Pasaran
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+                {/* Butang Manipulasi PUMP */}
+                <div>
+                  <span className="mono" style={{ fontSize: "0.75rem", color: "var(--green)", fontWeight: 700 }}>
+                    KAWALAN LONJAKAN (PUMP MARKET)
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.4rem" }}>
+                    <button onClick={() => triggerPump(10)} className="btn-pump mono">+10% PUMP</button>
+                    <button onClick={() => triggerPump(25)} className="btn-pump mono">+25% PUMP</button>
+                    <button onClick={() => triggerPump(50)} className="btn-pump mono">+50% MEGA</button>
+                  </div>
+                </div>
+
+                {/* Butang Manipulasi DUMP */}
+                <div>
+                  <span className="mono" style={{ fontSize: "0.75rem", color: "var(--red)", fontWeight: 700 }}>
+                    KAWALAN KEJATUHAN (DUMP MARKET)
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.4rem" }}>
+                    <button onClick={() => triggerDump(10)} className="btn-dump mono">-10% CRASH</button>
+                    <button onClick={() => triggerDump(25)} className="btn-dump mono">-25% DIP</button>
+                    <button onClick={() => triggerDump(50)} className="btn-dump mono">-50% NUKE</button>
+                  </div>
+                </div>
+
+                {/* Tetapan Trend Automatik */}
+                <div>
+                  <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700 }}>
+                    KECENDERUNGAN PASARAN (MARKET BIAS)
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.4rem" }}>
+                    <button 
+                      onClick={() => { setMarketBias("bull"); showAlert("Mod Bullish Diaktifkan!"); }}
+                      className="tab-btn mono"
+                      style={{ border: "1px solid var(--green)", color: marketBias === "bull" ? "#000" : "var(--green)", background: marketBias === "bull" ? "var(--green)" : "transparent" }}
+                    >
+                      BULLISH 🐂
+                    </button>
+                    <button 
+                      onClick={() => { setMarketBias("neutral"); showAlert("Mod Neutral Diaktifkan!"); }}
+                      className="tab-btn mono"
+                      style={{ border: "1px solid var(--border-ui)", color: "#fff", background: marketBias === "neutral" ? "rgba(255,255,255,0.15)" : "transparent" }}
+                    >
+                      NEUTRAL ⚖️
+                    </button>
+                    <button 
+                      onClick={() => { setMarketBias("bear"); showAlert("Mod Bearish Diaktifkan!"); }}
+                      className="tab-btn mono"
+                      style={{ border: "1px solid var(--red)", color: marketBias === "bear" ? "#fff" : "var(--red)", background: marketBias === "bear" ? "var(--red)" : "transparent" }}
+                    >
+                      BEARISH 🐻
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tetapkan Harga Khusus */}
+                <form onSubmit={applyCustomPrice} style={{ display: "flex", gap: "0.5rem" }}>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    className="trade-input mono"
+                    style={{ fontSize: "0.85rem" }}
+                    placeholder="Tetapkan Harga (cth: 5.00)"
+                    value={customPriceInput}
+                    onChange={(e) => setCustomPriceInput(e.target.value)}
+                  />
+                  <button type="submit" className="btn-pump mono" style={{ whiteSpace: "nowrap" }}>
+                    Set Harga
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
-      </section>
-
-      {/* Pemindahan Dompet */}
-      <section className="card">
-        <h3 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
-          <Send size={18} color="var(--gold)" /> Pindahkan $BAKA Ke Akaun Pemain
-        </h3>
-        <p style={{ fontSize: "0.82rem", color: "var(--muted)", marginBottom: "1rem" }}>
-          Keluarkan BakaCoin yang berjaya dilombong ke GamerTag Bedrock anda.
-        </p>
-
-        <form onSubmit={handleWithdraw} style={{ display: "flex", gap: "0.8rem", flexWrap: "wrap" }}>
-          <input
-            type="text"
-            className="mono"
-            style={{
-              flex: 1,
-              minWidth: "220px",
-              background: "var(--bg-input)",
-              border: "1px solid var(--border)",
-              color: "#fff",
-              padding: "0.75rem 1rem",
-              borderRadius: "8px",
-              outline: "none"
-            }}
-            placeholder="Minecraft GamerTag / Alamat Dompet"
-            value={walletTarget}
-            onChange={(e) => setWalletTarget(e.target.value)}
-            required
-          />
-          <button
-            type="submit"
-            className="mono"
-            style={{
-              background: "linear-gradient(135deg, var(--gold), #d97706)",
-              border: "none",
-              color: "#000",
-              fontWeight: 800,
-              padding: "0.75rem 1.4rem",
-              borderRadius: "8px",
-              cursor: "pointer"
-            }}
-          >
-            Tebus Baki ({balance.toFixed(2)} BAKA)
-          </button>
-        </form>
-      </section>
+      )}
     </div>
   );
 }
