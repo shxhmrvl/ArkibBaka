@@ -4,16 +4,31 @@ import "./style.css";
 import { 
   Activity, Lock, Unlock, KeyRound, User, 
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
-  Copy, Check, PlusCircle, Trash2, Ticket
+  Copy, Check, PlusCircle, Ticket, BarChart3, LineChart
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
 
-// Fungsi jana kod rawak PIN (Cth: BK5-8942-1052)
 const generateRandomPinCode = () => {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.floor(1000 + Math.random() * 9000);
   return `BK5-${part1}-${part2}`;
+};
+
+// Menjana data lilin (Candlestick) permulaan
+const generateInitialCandles = () => {
+  let base = 2.40;
+  const list = [];
+  for (let i = 0; i < 18; i++) {
+    const delta = (Math.random() * 0.08 - 0.04);
+    const open = base;
+    const close = Math.max(0.01, +(open + delta).toFixed(4));
+    const high = +(Math.max(open, close) + Math.random() * 0.03).toFixed(4);
+    const low = +(Math.min(open, close) - Math.random() * 0.03).toFixed(4);
+    list.push({ id: i, open, close, high, low });
+    base = close;
+  }
+  return list;
 };
 
 function App() {
@@ -22,9 +37,11 @@ function App() {
   const [fiatBalance, setFiatBalance] = useState(() => parseFloat(localStorage.getItem(`baka_fiat_${username}`)) || 0.0);
   const [bakaBalance, setBakaBalance] = useState(() => parseFloat(localStorage.getItem(`baka_coin_${username}`)) || 10.0);
 
-  // Pasaran
+  // Pasaran & Graf
+  const [chartMode, setChartMode] = useState("candle"); // 'candle' atau 'line'
   const [price, setPrice] = useState(2.50);
   const [prevPrice, setPrevPrice] = useState(2.50);
+  const [candles, setCandles] = useState(generateInitialCandles);
   const [priceHistory, setPriceHistory] = useState([2.30, 2.38, 2.45, 2.42, 2.50]);
   const [marketBias, setMarketBias] = useState("neutral");
 
@@ -36,7 +53,7 @@ function App() {
     return s ? JSON.parse(s) : [];
   });
 
-  // Sistem Baucar PIN (Disimpan dalam localStorage supaya tidak hilang bila refresh)
+  // Sistem Baucar PIN
   const [pinDatabase, setPinDatabase] = useState(() => {
     const savedPins = localStorage.getItem("baka_pin_database");
     return savedPins ? JSON.parse(savedPins) : [
@@ -44,7 +61,7 @@ function App() {
     ];
   });
 
-  // Modals & Forms
+  // Modals & UI
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const [inputPinCode, setInputPinCode] = useState("");
   const [showAdmin, setShowAdmin] = useState(false);
@@ -62,7 +79,7 @@ function App() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // Simpan data pengguna dan PIN
+  // Simpan data ke localStorage
   useEffect(() => {
     localStorage.setItem("bakact_user", username);
     localStorage.setItem(`baka_fiat_${username}`, fiatBalance.toString());
@@ -71,8 +88,10 @@ function App() {
     localStorage.setItem("baka_pin_database", JSON.stringify(pinDatabase));
   }, [username, fiatBalance, bakaBalance, orderHistory, pinDatabase]);
 
-  // Pergerakan Harga Pasaran Automatik
+  // Gelung Masa Nyata Pasaran & Pembentukan Lilin (Candlestick Engine)
   useEffect(() => {
+    let tickCounter = 0;
+
     const interval = setInterval(() => {
       setPrice((current) => {
         setPrevPrice(current);
@@ -82,6 +101,34 @@ function App() {
 
         const next = Math.max(0.01, +(current * (1 + change)).toFixed(4));
         setPriceHistory((h) => [...h.slice(-25), next]);
+
+        // Kemas kini data Candlestick
+        setCandles((prevCandles) => {
+          tickCounter++;
+          const lastCandle = prevCandles[prevCandles.length - 1];
+
+          // Setiap 4 tick, buka lilin baru. Jika belum, kemas kini lilin semasa
+          if (tickCounter >= 4) {
+            tickCounter = 0;
+            const newCandle = {
+              id: Date.now(),
+              open: next,
+              close: next,
+              high: next,
+              low: next
+            };
+            return [...prevCandles.slice(-17), newCandle];
+          } else {
+            const updated = {
+              ...lastCandle,
+              close: next,
+              high: Math.max(lastCandle.high, next),
+              low: Math.min(lastCandle.low, next)
+            };
+            return [...prevCandles.slice(0, -1), updated];
+          }
+        });
+
         return next;
       });
     }, 1500);
@@ -89,7 +136,7 @@ function App() {
     return () => clearInterval(interval);
   }, [marketBias]);
 
-  // Pengguna Menolak/Beli $BAKA
+  // Transaksi Beli / Jual
   const handleExecuteTrade = (e) => {
     e.preventDefault();
     const qty = parseFloat(tradeAmount);
@@ -123,11 +170,10 @@ function App() {
     setTradeAmount("");
   };
 
-  // Fungsi Pengguna Menebus Kod PIN
+  // Tebus PIN
   const handleRedeemPin = (e) => {
     e.preventDefault();
     const cleanCode = inputPinCode.trim().toUpperCase();
-
     const targetPin = pinDatabase.find((p) => p.code.toUpperCase() === cleanCode);
 
     if (!targetPin) {
@@ -140,10 +186,7 @@ function App() {
       return;
     }
 
-    // Berjaya tebus PIN sekali pakai
     setFiatBalance((b) => +(b + targetPin.value).toFixed(2));
-
-    // Kemas kini status PIN kepada USED
     setPinDatabase((prev) =>
       prev.map((p) =>
         p.code.toUpperCase() === cleanCode
@@ -154,10 +197,10 @@ function App() {
 
     setInputPinCode("");
     setShowRedeemModal(false);
-    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan ke baki anda!`);
+    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
   };
 
-  // Fungsi Admin: Generate PIN Baru Sekali Pakai (RM5)
+  // Admin: Jana PIN RM5
   const handleAdminGeneratePin = () => {
     const newCode = generateRandomPinCode();
     const newEntry = {
@@ -170,15 +213,13 @@ function App() {
     showToast(`PIN Baru Dijana: ${newCode} (RM5)`);
   };
 
-  // Fungsi Admin Salin PIN untuk hantar kepada pembeli
   const copyPinToClipboard = (code) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
-    showToast(`PIN ${code} disalin ke clipboard!`);
+    showToast(`PIN ${code} disalin!`);
     setTimeout(() => setCopiedCode(""), 2000);
   };
 
-  // Pengesahan Admin PIN 200200
   const handleAdminVerify = (e) => {
     e.preventDefault();
     if (adminPinInput === ADMIN_PIN) {
@@ -196,6 +237,11 @@ function App() {
     setPrice((curr) => {
       const next = +(curr * (1 + pct / 100)).toFixed(4);
       setPriceHistory((h) => [...h.slice(-25), next]);
+      setCandles((cList) => {
+        const last = cList[cList.length - 1];
+        const updated = { ...last, close: next, high: Math.max(last.high, next) };
+        return [...cList.slice(0, -1), updated];
+      });
       return next;
     });
     showToast(`🚀 PUMP +${pct}%!`);
@@ -205,21 +251,36 @@ function App() {
     setPrice((curr) => {
       const next = Math.max(0.01, +(curr * (1 - pct / 100)).toFixed(4));
       setPriceHistory((h) => [...h.slice(-25), next]);
+      setCandles((cList) => {
+        const last = cList[cList.length - 1];
+        const updated = { ...last, close: next, low: Math.min(last.low, next) };
+        return [...cList.slice(0, -1), updated];
+      });
       return next;
     });
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // SVG Chart points
+  // Skala untuk Candlestick & Line SVG
+  const allCandleHighs = candles.map((c) => c.high);
+  const allCandleLows = candles.map((c) => c.low);
+  const minCandle = Math.min(...allCandleLows) * 0.99;
+  const maxCandle = Math.max(...allCandleHighs) * 1.01;
+  const candleRange = maxCandle - minCandle || 1;
+
+  const getY = (val) => 220 - ((val - minCandle) / candleRange) * 190;
+
+  // Skala Line Chart
   const minP = Math.min(...priceHistory) * 0.98;
   const maxP = Math.max(...priceHistory) * 1.02;
-  const points = priceHistory.map((val, idx) => {
+  const linePoints = priceHistory.map((val, idx) => {
     const x = (idx / (priceHistory.length - 1)) * 500;
-    const y = 200 - ((val - minP) / (maxP - minP || 1)) * 180;
+    const y = 200 - ((val - minP) / (maxP - minP || 1)) * 170;
     return `${x},${y}`;
   }).join(" ");
 
   const isUp = price >= prevPrice;
+  const latestCandle = candles[candles.length - 1] || { open: price, high: price, low: price, close: price };
 
   return (
     <div className="container">
@@ -234,7 +295,7 @@ function App() {
           <div>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Exchange</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Sistem Top-up Baucar PIN Admin (RM5)
+              Sistem Dagangan Candlestick & Baucar RM5
             </p>
           </div>
         </div>
@@ -244,7 +305,6 @@ function App() {
             <User size={15} /> {username}
           </button>
 
-          {/* Butang Pengguna untuk Tebus PIN */}
           <button className="btn-pill btn-redeem mono" onClick={() => setShowRedeemModal(true)}>
             <KeyRound size={15} /> Tebus PIN (RM5)
           </button>
@@ -284,16 +344,33 @@ function App() {
 
       {/* Trading Grid */}
       <div className="trading-grid">
-        {/* Graf Live SVG */}
+        {/* Graf Carta Pasaran (Candlestick / Line) */}
         <div className="card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
-              <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>HARGA PASARAN LANGSUNG</span>
+              <span className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>HARGA PASARAN SEMASA</span>
               <div className="mono" style={{ fontSize: "2rem", fontWeight: 800, color: isUp ? "var(--green)" : "var(--red)" }}>
                 RM {price.toFixed(4)}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
+
+            {/* Butang Tukar Mod Candlestick / Line */}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
+              <div className="chart-mode-group">
+                <button 
+                  className={`btn-mode mono ${chartMode === "candle" ? "active" : ""}`}
+                  onClick={() => setChartMode("candle")}
+                >
+                  <BarChart3 size={14} /> Candlestick
+                </button>
+                <button 
+                  className={`btn-mode mono ${chartMode === "line" ? "active" : ""}`}
+                  onClick={() => setChartMode("line")}
+                >
+                  <LineChart size={14} /> Line
+                </button>
+              </div>
+
               <span className="mono" style={{
                 padding: "0.3rem 0.6rem", borderRadius: "6px",
                 background: isUp ? "rgba(0,192,135,0.15)" : "rgba(244,63,94,0.15)",
@@ -301,21 +378,73 @@ function App() {
               }}>
                 {isUp ? "+" : ""}{(((price - prevPrice) / prevPrice) * 100).toFixed(2)}%
               </span>
-              <div className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
-                Trend: {marketBias.toUpperCase()}
-              </div>
             </div>
           </div>
 
+          {/* Info Bar OHLC */}
+          {chartMode === "candle" && (
+            <div className="ohlc-bar mono">
+              <span>O: <strong style={{ color: "#fff" }}>{latestCandle.open.toFixed(3)}</strong></span>
+              <span>H: <strong style={{ color: "var(--green)" }}>{latestCandle.high.toFixed(3)}</strong></span>
+              <span>L: <strong style={{ color: "var(--red)" }}>{latestCandle.low.toFixed(3)}</strong></span>
+              <span>C: <strong style={{ color: "#fff" }}>{latestCandle.close.toFixed(3)}</strong></span>
+            </div>
+          )}
+
+          {/* Paparan Graf SVG */}
           <div className="chart-box">
-            <svg viewBox="0 0 500 200" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-              <polyline
-                fill="none"
-                stroke={isUp ? "var(--green)" : "var(--red)"}
-                strokeWidth="3"
-                points={points}
-              />
-            </svg>
+            {chartMode === "candle" ? (
+              // Paparan Candlestick SVG
+              <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+                {candles.map((c, i) => {
+                  const candleWidth = 14;
+                  const x = 20 + i * (460 / candles.length);
+                  const isBullish = c.close >= c.open;
+                  const candleColor = isBullish ? "var(--green)" : "var(--red)";
+
+                  const yHigh = getY(c.high);
+                  const yLow = getY(c.low);
+                  const yOpen = getY(c.open);
+                  const yClose = getY(c.close);
+
+                  const rectY = Math.min(yOpen, yClose);
+                  const rectHeight = Math.max(3, Math.abs(yClose - yOpen));
+
+                  return (
+                    <g key={c.id}>
+                      {/* Sumbu Lilin (Wick) */}
+                      <line
+                        x1={x + candleWidth / 2}
+                        y1={yHigh}
+                        x2={x + candleWidth / 2}
+                        y2={yLow}
+                        stroke={candleColor}
+                        strokeWidth="1.5"
+                      />
+                      {/* Badan Lilin (Body) */}
+                      <rect
+                        x={x}
+                        y={rectY}
+                        width={candleWidth}
+                        height={rectHeight}
+                        fill={candleColor}
+                        rx="2"
+                      />
+                    </g>
+                  );
+                })}
+              </svg>
+            ) : (
+              // Paparan Line Chart SVG
+              <svg viewBox="0 0 500 220" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+                <polyline
+                  fill="none"
+                  stroke={isUp ? "var(--green)" : "var(--red)"}
+                  strokeWidth="3"
+                  points={linePoints}
+                />
+              </svg>
+            )}
           </div>
         </div>
 
@@ -366,7 +495,7 @@ function App() {
         </div>
       </div>
 
-      {/* MODAL TEBUS PIN TOP-UP (UNTUK PENGGUNA) */}
+      {/* MODAL TEBUS PIN (RM5) */}
       {showRedeemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -380,7 +509,7 @@ function App() {
             </div>
 
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              Dapatkan kod PIN daripada Admin. Setiap PIN sah bernilai <strong>RM 5.00</strong> dan hanya boleh digunakan <strong>sekali sahaja</strong>.
+              Dapatkan kod PIN daripada Admin. Setiap PIN bernilai <strong>RM 5.00</strong> dan hanya boleh digunakan <strong>sekali sahaja</strong>.
             </p>
 
             <form onSubmit={handleRedeemPin}>
@@ -422,7 +551,7 @@ function App() {
             {!isAdminAuth ? (
               <form onSubmit={handleAdminVerify}>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>
-                  Masukkan PIN Pentadbir (200200) untuk menjana kod top-up & mengawal pasaran:
+                  Masukkan PIN Pentadbir (200200) untuk kawal pasaran & jana PIN:
                 </p>
                 <input
                   type="password"
@@ -440,12 +569,12 @@ function App() {
               </form>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-                {/* Bahagian Penjana PIN Top-up Sekali Pakai */}
+                {/* Penjana PIN Sekali Pakai (RM5) */}
                 <div style={{ background: "#090e1a", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <h4 style={{ fontSize: "0.95rem", color: "var(--green)" }}>Jana PIN Top-up RM 5</h4>
-                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Setiap PIN hanya boleh ditebus sekali</p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Satu PIN hanya boleh ditebus sekali</p>
                     </div>
                     <button 
                       onClick={handleAdminGeneratePin}
@@ -456,7 +585,6 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Senarai PIN Yang Dijana */}
                   <div className="pin-list">
                     {pinDatabase.map((pin, idx) => (
                       <div key={idx} className="pin-row mono">
@@ -516,13 +644,13 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TUKAR AKAUN PENGGUNA */}
+      {/* MODAL TUKAR AKAUN */}
       {showUserModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 style={{ fontSize: "1.1rem", marginBottom: "0.8rem" }}>Tukar Akaun Trader</h3>
             <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              Masukkan nama pengguna anda untuk memuatkan baki dan pegangan akaun tersebut:
+              Masukkan nama pengguna untuk memuatkan baki akaun berkenaan:
             </p>
             <form onSubmit={(e) => {
               e.preventDefault();
