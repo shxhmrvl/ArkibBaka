@@ -115,6 +115,12 @@ body {
   color: var(--text-primary);
 }
 
+.btn-logout {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
 /* Stats */
 .stats-grid {
   display: grid;
@@ -283,9 +289,31 @@ body {
   border-radius: 14px;
   padding: 1.8rem;
   width: 100%;
-  max-width: 580px;
+  max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-ui);
+  margin-bottom: 1.2rem;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-tab-btn.active {
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .pin-list {
