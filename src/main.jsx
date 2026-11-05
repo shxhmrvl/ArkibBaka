@@ -4,10 +4,12 @@ import "./style.css";
 import { 
   Activity, Lock, Unlock, KeyRound, User, LogIn, LogOut, UserPlus,
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
-  Copy, Check, PlusCircle, Ticket, BarChart3, LineChart
+  Copy, Check, PlusCircle, Ticket, BarChart3, LineChart, MessageCircle, ExternalLink
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
+const WHATSAPP_PHONE = "60183915460";
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent("Salam Admin, saya nak beli PIN Topup BakaTrader (RM5)")}`;
 
 const generateRandomPinCode = () => {
   const part1 = Math.floor(1000 + Math.random() * 9000);
@@ -31,7 +33,7 @@ const generateInitialCandles = () => {
 };
 
 function App() {
-  // PANGKALAN DATA PENGGUNA (User Database)
+  // Pangkalan Data Pengguna
   const [usersDb, setUsersDb] = useState(() => {
     const saved = localStorage.getItem("baka_users_db");
     return saved ? JSON.parse(saved) : [
@@ -39,7 +41,7 @@ function App() {
     ];
   });
 
-  // Sesi Pengguna Aktif
+  // Pengguna Semasa
   const [currentUsername, setCurrentUsername] = useState(() => {
     return localStorage.getItem("baka_active_user") || "trader_demo";
   });
@@ -66,9 +68,9 @@ function App() {
     ];
   });
 
-  // Modals
+  // Modals & UI
   const [showAuthModal, setShowAuthModal] = useState(!currentUser);
-  const [authTab, setAuthTab] = useState("login"); // 'login' | 'register'
+  const [authTab, setAuthTab] = useState("login");
   const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -88,7 +90,6 @@ function App() {
     setTimeout(() => setToast(""), 3000);
   };
 
-  // Simpan Users Database & PIN ke LocalStorage
   useEffect(() => {
     localStorage.setItem("baka_users_db", JSON.stringify(usersDb));
   }, [usersDb]);
@@ -105,7 +106,7 @@ function App() {
     localStorage.setItem("baka_pin_database", JSON.stringify(pinDatabase));
   }, [pinDatabase]);
 
-  // Gelung Masa Nyata Pasaran & Candlestick
+  // Gelung Pasaran & Kemas Kini Candlestick
   useEffect(() => {
     let tickCounter = 0;
 
@@ -151,7 +152,6 @@ function App() {
     return () => clearInterval(interval);
   }, [marketBias]);
 
-  // SISTEM REGISTER
   const handleRegister = (e) => {
     e.preventDefault();
     setAuthError("");
@@ -170,7 +170,7 @@ function App() {
     const newUser = {
       username: cleanUser,
       password: authPassword,
-      fiatBalance: 0.0, // Bermula dengan RM 0 (top-up guna PIN)
+      fiatBalance: 0.0,
       bakaBalance: 0.0,
       trades: []
     };
@@ -180,10 +180,9 @@ function App() {
     setShowAuthModal(false);
     setAuthUsername("");
     setAuthPassword("");
-    showToast(`🎉 Selamat datang, ${cleanUser}! Akaun anda berjaya didaftar.`);
+    showToast(`🎉 Selamat datang, ${cleanUser}!`);
   };
 
-  // SISTEM LOGIN
   const handleLogin = (e) => {
     e.preventDefault();
     setAuthError("");
@@ -205,7 +204,6 @@ function App() {
     showToast(`Log masuk berjaya sebagai ${existingUser.username}`);
   };
 
-  // SISTEM LOGOUT
   const handleLogout = () => {
     setCurrentUsername("");
     setShowAuthModal(true);
@@ -213,7 +211,6 @@ function App() {
     showToast("Anda telah log keluar.");
   };
 
-  // KEMAS KINI BAKI PENGGUNA TERKINI DI DATABASE
   const updateCurrentUserData = (updatedFields) => {
     if (!currentUser) return;
     setUsersDb((prev) =>
@@ -221,7 +218,6 @@ function App() {
     );
   };
 
-  // Transaksi Beli / Jual
   const handleExecuteTrade = (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -235,7 +231,7 @@ function App() {
     if (orderType === "buy") {
       const cost = +(qty * price).toFixed(2);
       if (currentUser.fiatBalance < cost) {
-        showToast("Baki RM tidak mencukupi! Sila tebus PIN daripada Admin.");
+        showToast("Baki RM tidak mencukupi! Sila beli PIN di WhatsApp Admin.");
         return;
       }
 
@@ -272,7 +268,6 @@ function App() {
     setTradeAmount("");
   };
 
-  // Tebus PIN
   const handleRedeemPin = (e) => {
     e.preventDefault();
     if (!currentUser) {
@@ -293,12 +288,10 @@ function App() {
       return;
     }
 
-    // Tambah nilai ke baki pengguna di database
     updateCurrentUserData({
       fiatBalance: +(currentUser.fiatBalance + targetPin.value).toFixed(2)
     });
 
-    // Tandakan kod PIN sebagai DIGUNAKAN
     setPinDatabase((prev) =>
       prev.map((p) =>
         p.code.toUpperCase() === cleanCode
@@ -309,10 +302,9 @@ function App() {
 
     setInputPinCode("");
     setShowRedeemModal(false);
-    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan ke akaun anda!`);
+    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
   };
 
-  // Admin: Jana PIN RM5
   const handleAdminGeneratePin = () => {
     const newCode = generateRandomPinCode();
     const newEntry = {
@@ -344,7 +336,6 @@ function App() {
     }
   };
 
-  // PUMP / DUMP
   const triggerPump = (pct) => {
     setPrice((curr) => {
       const next = +(curr * (1 + pct / 100)).toFixed(4);
@@ -373,23 +364,33 @@ function App() {
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // Skala Candlestick & Line
+  // PENGIRAAN SKALA & GRID GRAF
   const allCandleHighs = candles.map((c) => c.high);
   const allCandleLows = candles.map((c) => c.low);
-  const minCandle = Math.min(...allCandleLows) * 0.99;
-  const maxCandle = Math.max(...allCandleHighs) * 1.01;
+  const minCandle = Math.min(...allCandleLows) * 0.992;
+  const maxCandle = Math.max(...allCandleHighs) * 1.008;
   const candleRange = maxCandle - minCandle || 1;
-  const getY = (val) => 220 - ((val - minCandle) / candleRange) * 190;
+  const getY = (val) => 220 - ((val - minCandle) / candleRange) * 180;
 
-  const minP = Math.min(...priceHistory) * 0.98;
-  const maxP = Math.max(...priceHistory) * 1.02;
+  // Garisan Grid Melintang (Price Levels)
+  const gridLevels = [0.15, 0.38, 0.62, 0.85].map((pct) => {
+    const pVal = minCandle + candleRange * pct;
+    return { y: getY(pVal), price: pVal };
+  });
+
+  // Garisan Grid Menegak (Time Intervals)
+  const verticalGridXs = [50, 130, 210, 290, 370];
+
+  const minP = Math.min(...priceHistory) * 0.985;
+  const maxP = Math.max(...priceHistory) * 1.015;
   const linePoints = priceHistory.map((val, idx) => {
-    const x = (idx / (priceHistory.length - 1)) * 500;
-    const y = 200 - ((val - minP) / (maxP - minP || 1)) * 170;
+    const x = (idx / (priceHistory.length - 1)) * 430 + 10;
+    const y = 220 - ((val - minP) / (maxP - minP || 1)) * 180;
     return `${x},${y}`;
   }).join(" ");
 
   const isUp = price >= prevPrice;
+  const currentPriceY = getY(price);
   const latestCandle = candles[candles.length - 1] || { open: price, high: price, low: price, close: price };
 
   return (
@@ -405,7 +406,7 @@ function App() {
           <div>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Exchange</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Sistem Pengguna Berdaftar & Candlestick Live
+              Platform Dagangan $BAKA & Bantuan WhatsApp Rasmi
             </p>
           </div>
         </div>
@@ -437,16 +438,34 @@ function App() {
         </div>
       </header>
 
-      {/* Stats Pengguna */}
+      {/* Stats Pengguna & Petak Beli PIN WhatsApp */}
       <section className="stats-grid">
         <div className="card">
           <span className="stat-label mono">Baki Modal Tunai (MYR)</span>
           <div className="stat-val mono" style={{ color: "#fff" }}>
             RM {currentUser ? currentUser.fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            Tebus PIN untuk tambah modal RM
-          </span>
+
+          {/* Butang Beli PIN WhatsApp & Tebus PIN bersebelahan */}
+          <div className="stat-actions-row">
+            <a 
+              href={WHATSAPP_LINK} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="btn-whatsapp mono"
+              title="Chat WhatsApp Admin 018-3915460"
+            >
+              <MessageCircle size={15} /> Beli PIN (WhatsApp)
+            </a>
+
+            <button 
+              className="btn-pill btn-redeem mono" 
+              style={{ fontSize: "0.78rem", padding: "0.45rem 0.85rem" }}
+              onClick={() => setShowRedeemModal(true)}
+            >
+              <Ticket size={14} /> Masukkan PIN
+            </button>
+          </div>
         </div>
 
         <div className="card">
@@ -454,6 +473,9 @@ function App() {
           <div className="stat-val mono" style={{ color: "var(--green)" }}>
             {currentUser ? currentUser.bakaBalance.toFixed(4) : "0.0000"} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
           </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
+            Boleh dijual bila-bila masa
+          </span>
         </div>
 
         <div className="card">
@@ -461,12 +483,15 @@ function App() {
           <div className="stat-val mono" style={{ color: "var(--gold)" }}>
             RM {currentUser ? (currentUser.fiatBalance + (currentUser.bakaBalance * price)).toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
           </div>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
+            Kiraan nilai semasa modal + coin
+          </span>
         </div>
       </section>
 
       {/* Trading Grid */}
       <div className="trading-grid">
-        {/* Graf Carta Pasaran */}
+        {/* Graf Carta Pasaran dengan Grid Realistik */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
@@ -511,12 +536,80 @@ function App() {
             </div>
           )}
 
+          {/* SVG DENGAN GRID TRADINGVIEW & LIVE PRICE TRACKER */}
           <div className="chart-box">
-            {chartMode === "candle" ? (
-              <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-                {candles.map((c, i) => {
-                  const candleWidth = 14;
-                  const x = 20 + i * (460 / candles.length);
+            <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+              {/* Garisan Grid Menegak (Vertical Time Grid) */}
+              {verticalGridXs.map((xVal, idx) => (
+                <line
+                  key={`v-${idx}`}
+                  x1={xVal}
+                  y1={10}
+                  x2={xVal}
+                  y2={230}
+                  stroke="rgba(255, 255, 255, 0.04)"
+                  strokeDasharray="4 4"
+                />
+              ))}
+
+              {/* Garisan Grid Melintang & Label Paksi-Y (Horizontal Price Grid) */}
+              {gridLevels.map((lvl, idx) => (
+                <g key={`h-${idx}`}>
+                  <line
+                    x1={0}
+                    y1={lvl.y}
+                    x2={440}
+                    y2={lvl.y}
+                    stroke="rgba(255, 255, 255, 0.06)"
+                    strokeDasharray="3 3"
+                  />
+                  <text
+                    x={444}
+                    y={lvl.y + 3}
+                    fill="#64748b"
+                    fontSize="9"
+                    fontFamily="JetBrains Mono"
+                  >
+                    {lvl.price.toFixed(3)}
+                  </text>
+                </g>
+              ))}
+
+              {/* Garisan Penunjuk Harga Semasa (Current Price Indicator) */}
+              <line
+                x1={0}
+                y1={currentPriceY}
+                x2={440}
+                y2={currentPriceY}
+                stroke={isUp ? "var(--green)" : "var(--red)"}
+                strokeDasharray="3 3"
+                strokeWidth="1.2"
+                opacity="0.85"
+              />
+              <rect
+                x={441}
+                y={Math.max(5, Math.min(218, currentPriceY - 8))}
+                width={56}
+                height={16}
+                fill={isUp ? "var(--green)" : "var(--red)"}
+                rx="3"
+              />
+              <text
+                x={445}
+                y={Math.max(16, Math.min(229, currentPriceY + 4))}
+                fill="#000"
+                fontSize="9"
+                fontWeight="800"
+                fontFamily="JetBrains Mono"
+              >
+                {price.toFixed(3)}
+              </text>
+
+              {/* Mod Candlestick */}
+              {chartMode === "candle" ? (
+                candles.map((c, i) => {
+                  const candleWidth = 13;
+                  const x = 15 + i * (410 / candles.length);
                   const isBullish = c.close >= c.open;
                   const candleColor = isBullish ? "var(--green)" : "var(--red)";
 
@@ -548,18 +641,17 @@ function App() {
                       />
                     </g>
                   );
-                })}
-              </svg>
-            ) : (
-              <svg viewBox="0 0 500 220" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+                })
+              ) : (
+                /* Mod Line Chart */
                 <polyline
                   fill="none"
                   stroke={isUp ? "var(--green)" : "var(--red)"}
-                  strokeWidth="3"
+                  strokeWidth="2.5"
                   points={linePoints}
                 />
-              </svg>
-            )}
+              )}
+            </svg>
           </div>
         </div>
 
@@ -679,7 +771,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TEBUS PIN (RM5) */}
+      {/* MODAL TEBUS PIN (RM5) BESERTA BUTANG WHATSAPP */}
       {showRedeemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -692,9 +784,19 @@ function App() {
               </button>
             </div>
 
-            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem" }}>
-              Dapatkan kod PIN daripada Admin. Setiap PIN bernilai <strong>RM 5.00</strong> dan hanya boleh digunakan <strong>sekali sahaja</strong>.
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>
+              Belum ada kod PIN? Beli terus daripada Admin secara rasmi:
             </p>
+
+            <a 
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-whatsapp mono"
+              style={{ width: "100%", justifyContent: "center", padding: "0.7rem", marginBottom: "1.2rem", fontSize: "0.88rem" }}
+            >
+              <MessageCircle size={16} /> Hubungi Admin di WhatsApp (018-3915460)
+            </a>
 
             <form onSubmit={handleRedeemPin}>
               <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
@@ -711,7 +813,7 @@ function App() {
                 required
               />
 
-              <button type="submit" className="btn-action-order mono buy" style={{ marginTop: "1.2rem" }}>
+              <button type="submit" className="btn-action-order mono buy" style={{ marginTop: "1rem" }}>
                 Tebus Sekarang (+RM 5.00)
               </button>
             </form>
