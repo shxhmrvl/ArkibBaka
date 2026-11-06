@@ -5,7 +5,8 @@ import {
   Server, Shield, Zap, Gift, User, LogIn, LogOut, UserPlus, 
   Copy, PlusCircle, Ticket, MessageCircle, Lock, Unlock, 
   Clock, CheckCircle2, X, Coins, Crown, Package, Key, 
-  ThumbsUp, CalendarCheck, Star, AlertCircle, Check
+  ThumbsUp, CalendarCheck, Star, AlertCircle, Info, Globe, 
+  Check, Layers, BookOpen, MapPin
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -30,7 +31,7 @@ const STORE_ITEMS = [
     tagClass: "tag-rank",
     price: 15,
     icon: "Crown",
-    desc: "Akses /fly di kawasan Plot, awalan tag [VIP] emas, dan 5x Claim Tanah tambahan.",
+    desc: "Akses arahan /fly di kawasan Plot, awalan tag [VIP] emas, dan 5x Claim Tanah tambahan.",
     command: (ign) => `/tag "${ign}" add VIP`
   },
   {
@@ -40,7 +41,7 @@ const STORE_ITEMS = [
     tagClass: "tag-rank",
     price: 35,
     icon: "Shield",
-    desc: "Semua kelebihan VIP + akses /feed, /heal pantas, dan kit bulanan eksklusif.",
+    desc: "Semua kelebihan VIP + akses /feed, /heal cooldown rendah, dan kit bulanan eksklusif.",
     command: (ign) => `/tag "${ign}" add MVP`
   },
   {
@@ -125,6 +126,7 @@ function App() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
+  // Ambil data status pelayan Bedrock live dari API
   useEffect(() => {
     fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_IP}:${SERVER_PORT}`)
       .then((res) => res.json())
@@ -180,7 +182,7 @@ function App() {
     setAuthForm({ user: "", pass: "", ign: "", err: "" });
   };
 
-  // Ganjaran Harian: Tepat RM 0.05
+  // Ganjaran Harian RM 0.05
   const handleDailyClaim = () => {
     if (!currentUser) return setShowAuth(true);
     const today = new Date().toDateString();
@@ -200,7 +202,7 @@ function App() {
     showToast(`Ganjaran harian berjaya diambil (+RM ${rewardBonus.toFixed(2)})!`);
   };
 
-  // Undian Bedrock: RM 0.25 Sehari Sekali
+  // Undian Bedrock RM 0.25 Sehari Sekali
   const handleBedrockVote = () => {
     if (!currentUser) return setShowAuth(true);
     const today = new Date().toDateString();
@@ -442,15 +444,15 @@ function App() {
         </div>
       </div>
 
-      {/* Kedai Hadiah Server BakaCrew */}
+      {/* KEDAI ITEM: SUSUN ATUR GRID 2 LAJUR PADA TELEFON PINTAR */}
       <div>
         <div className="store-header">
           <div>
-            <h3 style={{ fontSize: "1.2rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.4rem" }}>
               <Gift size={18} color="var(--green)" /> Kedai Hadiah & Pangkat Pelayan
             </h3>
-            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              Tebus pangkat, pek barangan, atau duit Scoreboard terus ke akaun Bedrock anda.
+            <p style={{ fontSize: "0.76rem", color: "var(--text-muted)" }}>
+              Pilih item, pangkat, atau duit Scoreboard untuk ditebus terus ke pelayan Bedrock anda.
             </p>
           </div>
 
@@ -467,30 +469,28 @@ function App() {
           </div>
         </div>
 
-        {/* Grid Kad Item Kedai */}
+        {/* 2-Column Grid on Mobile */}
         <div className="store-grid">
           {filteredItems.map((item) => (
             <div key={item.id} className="item-card">
               <span className={`item-tag mono ${item.tagClass}`}>{item.category}</span>
               <div>
                 <div className="item-icon-box">
-                  {item.icon === "Crown" && <Crown size={22} color="var(--gold)" />}
-                  {item.icon === "Shield" && <Shield size={22} color="var(--cyan)" />}
-                  {item.icon === "Package" && <Package size={22} color="var(--green)" />}
-                  {item.icon === "Zap" && <Zap size={22} color="var(--gold)" />}
-                  {item.icon === "Coins" && <Coins size={22} color="var(--green)" />}
-                  {item.icon === "Key" && <Key size={22} color="#c084fc" />}
+                  {item.icon === "Crown" && <Crown size={18} color="var(--gold)" />}
+                  {item.icon === "Shield" && <Shield size={18} color="var(--cyan)" />}
+                  {item.icon === "Package" && <Package size={18} color="var(--green)" />}
+                  {item.icon === "Zap" && <Zap size={18} color="var(--gold)" />}
+                  {item.icon === "Coins" && <Coins size={18} color="var(--green)" />}
+                  {item.icon === "Key" && <Key size={18} color="#c084fc" />}
                 </div>
-                <h4 style={{ fontSize: "1rem", fontWeight: 800 }}>{item.name}</h4>
-                <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", marginTop: "0.4rem", lineHeight: 1.5 }}>
-                  {item.desc}
-                </p>
+                <h4>{item.name}</h4>
+                <p>{item.desc}</p>
               </div>
 
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Harga:</span>
-                  <span className="mono" style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--green)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.75rem" }}>
+                  <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Harga:</span>
+                  <span className="mono" style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--green)" }}>
                     RM {item.price.toFixed(2)}
                   </span>
                 </div>
@@ -502,7 +502,7 @@ function App() {
                     setBuyItemModal(item);
                   }}
                 >
-                  <Gift size={14} /> Tebus Sekarang
+                  <Gift size={13} /> Tebus
                 </button>
               </div>
             </div>
@@ -510,7 +510,63 @@ function App() {
         </div>
       </div>
 
-      {/* Rekod Penebusan Pemain */}
+      {/* SEKSYEN MAKLUMAT & INFORMASI PELAYAN BAKACREW (DATA INTERNET) */}
+      <div className="server-info-card">
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+          <Info size={18} color="var(--cyan)" />
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>Mengenai Pelayan BakaCrew SMP</h3>
+        </div>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+          <strong>BakaCrew</strong> merupakan sebuah <em>Bedrock Dedicated Server (BDS)</em> berteraskan komuniti yang diasaskan di <strong>Malaysia</strong>. Pelayan ini diwujudkan khas dengan wawasan menyatukan seluruh komuniti pemain Minecraft Bedrock tempatan di bawah satu dunia kelangsungan hidup (*Survival Multiplayer - SMP*) yang harmoni, stabil, dan berprestasi tinggi.
+        </p>
+
+        {/* 4 Kotak Statistik & Maklumat Teknikal */}
+        <div className="info-stats-grid">
+          <div className="info-stat-box">
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }} className="mono">Platform Pelayan</span>
+            <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--green)", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <Layers size={14} /> Bedrock Dedicated Only
+            </div>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>MCPE, Windows 10/11, Konsol</p>
+          </div>
+
+          <div className="info-stat-box">
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }} className="mono">Lokasi & Kestabilan</span>
+            <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--cyan)", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <MapPin size={14} /> Malaysia (Uptime 93%+)
+            </div>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>Ping rendah & bebas lag tempatan</p>
+          </div>
+
+          <div className="info-stat-box">
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }} className="mono">Ekonomi Server</span>
+            <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--gold)", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <Coins size={14} /> Scoreboard System
+            </div>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>Objektif 'money' & kedai pasar spawn</p>
+          </div>
+
+          <div className="info-stat-box">
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }} className="mono">Daftar Rasmi</span>
+            <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#fff", marginTop: "0.2rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <User size={14} /> Lightinityy & Staff
+            </div>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>BakaCrew Management Team</p>
+          </div>
+        </div>
+
+        {/* Tag Rasmi Pelayan */}
+        <div style={{ marginTop: "0.8rem" }}>
+          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Tag & Ciri-Ciri Rasmi Pelayan:</span>
+          <div className="lore-tags mono">
+            {["SMP Survival", "Semi-Vanilla", "Economy Driven", "Land Claiming", "Anti-Grief", "Spawn Market", "Roleplay", "Malaysia SEA"].map((t) => (
+              <span key={t} className="lore-tag">#{t}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Rekod Penebusan Akaun */}
       <div className="card" style={{ marginBottom: "2rem" }}>
         <h4 style={{ fontSize: "0.92rem", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.8rem" }}>
           <Clock size={16} color="var(--cyan)" /> Rekod Penebusan Akaun Anda
@@ -543,13 +599,13 @@ function App() {
         </div>
       </div>
 
-      {/* Modal Pengesahan Pembelian */}
+      {/* Modal Sahkan Pembelian Item */}
       {buyItemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--green)" }}>
-                <Gift size={18} /> Pengesahan Penebusan: {buyItemModal.name}
+              <h3 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--green)" }}>
+                <Gift size={18} /> Sahkan Penebusan: {buyItemModal.name}
               </h3>
               <button onClick={() => setBuyItemModal(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
@@ -565,12 +621,12 @@ function App() {
                   onChange={(e) => setClaimIgn(e.target.value)} 
                   required 
                 />
-                <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem", display: "block" }}>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.2rem", display: "block" }}>
                   Item atau pangkat akan diberikan terus kepada nama akaun ini di dalam pelayan.
                 </span>
               </div>
 
-              <div style={{ background: "#060913", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "1.2rem" }}>
+              <div style={{ background: "#060913", border: "1px solid var(--border-ui)", padding: "0.75rem", borderRadius: "8px", marginBottom: "1.2rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--text-muted)" }}>
                   <span>Harga Item:</span>
                   <strong className="mono" style={{ color: "#fff" }}>RM {buyItemModal.price.toFixed(2)}</strong>
@@ -581,7 +637,7 @@ function App() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-buy-item mono">
+              <button type="submit" className="btn-buy-item mono" style={{ padding: "0.65rem" }}>
                 Sahkan & Potong Baki (RM {buyItemModal.price.toFixed(2)})
               </button>
             </form>
@@ -627,7 +683,7 @@ function App() {
                 <input type="password" className="input-styled mono" placeholder="Kata laluan akaun" value={authForm.pass} onChange={(e) => setAuthForm({ ...authForm, pass: e.target.value })} required />
               </div>
 
-              <button type="submit" className="btn-buy-item mono">
+              <button type="submit" className="btn-buy-item mono" style={{ padding: "0.65rem" }}>
                 {authTab === "login" ? "Log Masuk Sekarang" : "Daftar Akaun Pemain"}
               </button>
             </form>
@@ -635,7 +691,7 @@ function App() {
         </div>
       )}
 
-      {/* Modal Tebus PIN */}
+      {/* Modal Tebus PIN RM5 */}
       {showRedeem && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -649,13 +705,13 @@ function App() {
             <form onSubmit={handleRedeemPin}>
               <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>MASUKKAN KOD PIN (BK5-XXXX-XXXX)</label>
               <input type="text" className="input-styled mono" style={{ textAlign: "center", fontSize: "1.15rem", letterSpacing: "2px", textTransform: "uppercase" }} placeholder="BK5-0000-0000" value={inputPin} onChange={(e) => setInputPin(e.target.value)} required />
-              <button type="submit" className="btn-buy-item mono" style={{ marginTop: "1rem" }}>Tebus Sekarang (+RM 5.00)</button>
+              <button type="submit" className="btn-buy-item mono" style={{ marginTop: "1rem", padding: "0.65rem" }}>Tebus Sekarang (+RM 5.00)</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal Admin (PIN 200200) */}
+      {/* Modal Admin Dashboard (PIN 200200) */}
       {showAdmin && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ borderColor: "var(--gold)" }}>
@@ -668,7 +724,7 @@ function App() {
               <form onSubmit={(e) => { e.preventDefault(); if (adminPin === ADMIN_PIN) { setIsAdmin(true); setAdminPin(""); } else showToast("PIN tidak sah!"); }}>
                 <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>Masukkan kod PIN Pentadbir (200200):</p>
                 <input type="password" maxLength={6} className="input-styled mono" style={{ textAlign: "center", fontSize: "1.3rem", letterSpacing: "6px" }} placeholder="••••••" value={adminPin} onChange={(e) => setAdminPin(e.target.value)} autoFocus />
-                <button type="submit" className="btn-buy-item mono" style={{ background: "var(--gold)", color: "#000", marginTop: "1rem" }}>Buka Akses Admin</button>
+                <button type="submit" className="btn-buy-item mono" style={{ background: "var(--gold)", color: "#000", marginTop: "1rem", padding: "0.65rem" }}>Buka Akses Admin</button>
               </form>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
