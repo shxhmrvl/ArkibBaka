@@ -196,7 +196,7 @@ body {
 
 .chart-box {
   width: 100%;
-  height: 280px;
+  height: 290px;
   background: #060913;
   border: 1px solid var(--border-ui);
   border-radius: 10px;
@@ -205,10 +205,27 @@ body {
   position: relative;
 }
 
-/* Chart Mode Selector */
+/* Chart Controls Toolbar */
+.chart-controls-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .chart-mode-group {
   display: flex;
   gap: 0.3rem;
+  background: #090e1a;
+  padding: 0.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-ui);
+}
+
+.zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   background: #090e1a;
   padding: 0.25rem;
   border-radius: 6px;
@@ -219,7 +236,7 @@ body {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 0.3rem 0.6rem;
+  padding: 0.3rem 0.55rem;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -230,18 +247,64 @@ body {
   transition: all 0.2s;
 }
 
+.btn-mode:hover:not(:disabled) {
+  color: #fff;
+}
+
+.btn-mode:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .btn-mode.active {
   background: var(--green);
   color: #000;
 }
 
+/* Pips Display */
+.pips-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: #090e1a;
+  border: 1px solid var(--border-ui);
+}
+
 .ohlc-bar {
   display: flex;
-  gap: 0.8rem;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
   flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Pips History Tape */
+.pips-history-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.6rem 0.2rem 0.2rem 0.2rem;
+  margin-top: 0.6rem;
+  border-top: 1px dashed var(--border-ui);
+}
+
+.pips-pill {
+  flex-shrink: 0;
+  background: #090e1a;
+  border: 1px solid var(--border-ui);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* Order Desk */
@@ -374,7 +437,6 @@ body {
   font-size: 0.85rem;
 }
 
-/* Command box snippet */
 .command-snippet {
   background: #040711;
   border: 1px solid rgba(6, 182, 212, 0.2);
