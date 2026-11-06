@@ -1,20 +1,22 @@
 :root {
-  --bg-deep: #050813;
-  --bg-surface: #0a1022;
-  --bg-card: #0e172e;
-  --bg-card-hover: #131f3e;
-  --bg-input: #060a17;
+  --bg-deep: #030611;
+  --bg-surface: rgba(10, 16, 34, 0.75);
+  --bg-card: rgba(14, 23, 46, 0.65);
+  --bg-card-hover: rgba(19, 31, 62, 0.85);
+  --bg-input: rgba(6, 10, 23, 0.8);
   
   --border-ui: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(6, 182, 212, 0.35);
+  --border-turquoise: rgba(20, 184, 166, 0.4);
   
   --cyan: #06b6d4;
-  --cyan-glow: rgba(6, 182, 212, 0.3);
+  --cyan-glow: rgba(6, 182, 212, 0.35);
+  --turquoise: #14b8a6;
+  --teal: #0d9488;
   --green: #00c087;
   --green-glow: rgba(0, 192, 135, 0.3);
   --gold: #f59e0b;
   --gold-glow: rgba(245, 158, 11, 0.3);
-  --purple: #a855f7;
   --red: #f43f5e;
   --whatsapp: #25d366;
   
@@ -35,12 +37,7 @@ body {
   background-color: var(--bg-deep);
   color: var(--text-main);
   min-height: 100vh;
-  background-image: 
-    radial-gradient(circle at 15% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 40%),
-    radial-gradient(circle at 85% 100%, rgba(0, 192, 135, 0.06) 0px, transparent 40%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
+  position: relative;
   overflow-x: hidden;
 }
 
@@ -48,15 +45,132 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ========================================================
+   3. ANIMATED LIQUID BACKGROUND (GPU FRIENDLY)
+   ======================================================== */
+.liquid-bg-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liquid-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  will-change: transform, border-radius;
+  transform: translate3d(0, 0, 0);
+}
+
+.blob-1 {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, var(--cyan) 0%, rgba(6, 182, 212, 0) 70%);
+  top: -120px;
+  left: -100px;
+  animation: liquidMorph1 22s ease-in-out infinite alternate;
+}
+
+.blob-2 {
+  width: 580px;
+  height: 580px;
+  background: radial-gradient(circle, var(--turquoise) 0%, rgba(20, 184, 166, 0) 70%);
+  bottom: -150px;
+  right: -120px;
+  animation: liquidMorph2 26s ease-in-out infinite alternate;
+}
+
+.blob-3 {
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.8) 0%, rgba(0, 192, 135, 0) 70%);
+  top: 45%;
+  left: 30%;
+  animation: liquidMorph3 28s ease-in-out infinite alternate;
+}
+
+.minecraft-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 38px 38px;
+  pointer-events: none;
+}
+
+@keyframes liquidMorph1 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    border-radius: 42% 58% 70% 30% / 45% 45% 55% 55%;
+  }
+  50% {
+    transform: translate(90px, 80px) scale(1.15);
+    border-radius: 58% 42% 38% 62% / 55% 65% 35% 45%;
+  }
+  100% {
+    transform: translate(-40px, 120px) scale(0.95);
+    border-radius: 35% 65% 60% 40% / 60% 30% 70% 40%;
+  }
+}
+
+@keyframes liquidMorph2 {
+  0% {
+    transform: translate(0, 0) scale(1);
+    border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%;
+  }
+  50% {
+    transform: translate(-100px, -70px) scale(1.12);
+    border-radius: 65% 35% 55% 45% / 45% 55% 45% 55%;
+  }
+  100% {
+    transform: translate(60px, -110px) scale(0.92);
+    border-radius: 40% 60% 70% 30% / 50% 60% 40% 50%;
+  }
+}
+
+@keyframes liquidMorph3 {
+  0% {
+    transform: translate(0, 0) scale(0.9);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(70px, -60px) scale(1.2);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-80px, 50px) scale(0.95);
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-blob {
+    animation: none !important;
+  }
+}
+
+/* ========================================================
+   4. LIQUID GLASS UI CONTAINER & COMPONENT BASES
+   ======================================================== */
+.site-content {
+  position: relative;
+  z-index: 10;
+}
+
 .container {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 0 0.85rem 5rem 0.85rem;
+  padding: 0 1rem 5rem 1rem;
 }
 
 /* 1. Ticker Pengumuman */
 .announcement-bar {
-  background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), rgba(0, 192, 135, 0.15));
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(20, 184, 166, 0.18));
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border-ui);
   padding: 0.45rem 1rem;
   font-size: 0.72rem;
@@ -74,44 +188,57 @@ body {
   white-space: nowrap;
 }
 
-/* 2. Navbar Modern */
+/* ========================================================
+   1. RESPONSIVE NAVBAR (MOBILE FIRST OPTIMIZATION)
+   ======================================================== */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0.95rem;
-  background: rgba(10, 16, 34, 0.85);
-  backdrop-filter: blur(14px);
+  padding: 0.75rem 1.15rem; /* 16px–20px touch padding */
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-ui);
-  border-radius: 14px;
+  border-radius: 16px;
   margin: 0.85rem 0 1.25rem 0;
-  gap: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
   position: relative;
   z-index: 100;
+}
+
+@supports not (backdrop-filter: blur(16px)) {
+  .navbar {
+    background: rgba(10, 16, 34, 0.95);
+  }
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-icon {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--cyan), var(--green));
+  background: linear-gradient(135deg, var(--cyan), var(--turquoise));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #000;
   box-shadow: 0 0 15px var(--cyan-glow);
+  flex-shrink: 0;
 }
 
 .brand-title {
   font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .brand-badge {
@@ -120,12 +247,27 @@ body {
   font-weight: 700;
 }
 
+/* Nav Actions Container */
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
+/* Desktop-Only Actions: Hidden on Mobile */
+.desktop-nav-actions {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+@media (min-width: 769px) {
+  .desktop-nav-actions {
+    display: flex;
+  }
+}
+
+/* General Button Pills */
 .btn-pill {
   padding: 0.42rem 0.75rem;
   border-radius: 8px;
@@ -163,31 +305,37 @@ body {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-ui);
   color: var(--text-main);
-  max-width: 120px;
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 /* ========================================================
-   THREE-DOT DROPDOWN MENU
+   2. THREE-DOT DROPDOWN MENU (LIQUID GLASS DESIGN)
    ======================================================== */
 .three-dots-wrapper {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-three-dots {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-ui);
   color: var(--text-main);
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  /* Touch target min 44px x 44px for iOS & Android ergonomics */
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
 }
 
 .btn-three-dots:hover,
@@ -195,28 +343,36 @@ body {
   background: rgba(6, 182, 212, 0.15);
   border-color: var(--cyan);
   color: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan-glow);
+  box-shadow: 0 0 16px var(--cyan-glow);
 }
 
 .three-dots-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
-  width: 215px;
-  background: #0d152a;
+  width: 235px;
+  background: rgba(13, 21, 42, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-glow);
-  border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(6, 182, 212, 0.12);
-  padding: 0.4rem;
-  z-index: 1000;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.75), 0 0 20px rgba(6, 182, 212, 0.18);
+  padding: 0.5rem;
+  z-index: 200;
   transform-origin: top right;
-  animation: menuSlideFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: menuSlideFade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .three-dots-dropdown {
+    background: #0d152a;
+  }
 }
 
 @keyframes menuSlideFade {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.95);
+    transform: translateY(-8px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -224,27 +380,57 @@ body {
   }
 }
 
+.dropdown-user-header {
+  padding: 0.6rem 0.75rem;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 10px;
+  margin-bottom: 0.45rem;
+}
+
+.dropdown-user-role {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.dropdown-user-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-user-balance {
+  font-size: 0.72rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.62rem 0.8rem;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-main);
   font-size: 0.78rem;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
 }
 
 .dropdown-item:hover {
-  background: rgba(6, 182, 212, 0.12);
+  background: rgba(6, 182, 212, 0.14);
   color: var(--cyan);
-  transform: translateX(2px);
+  transform: translateX(3px);
 }
 
 .dropdown-item.admin-highlight {
@@ -252,8 +438,17 @@ body {
 }
 
 .dropdown-item.admin-highlight:hover {
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
+}
+
+.dropdown-item.logout-item {
+  color: var(--red);
+}
+
+.dropdown-item.logout-item:hover {
+  background: rgba(244, 63, 94, 0.15);
+  color: #ff4d6d;
 }
 
 .dropdown-divider {
@@ -262,10 +457,12 @@ body {
   margin: 0.35rem 0.4rem;
 }
 
-/* 3. Hero Section */
+/* ========================================================
+   HERO SECTION & TRUST CARDS
+   ======================================================== */
 .hero-section {
   text-align: center;
-  padding: 1.8rem 1rem 1.2rem 1rem;
+  padding: 1.8rem 0.5rem 1.2rem 0.5rem;
 }
 
 .verified-badge {
@@ -304,7 +501,6 @@ body {
   line-height: 1.5;
 }
 
-/* Trust Cards */
 .trust-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -314,9 +510,10 @@ body {
 
 .trust-card {
   background: var(--bg-surface);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border-ui);
-  padding: 0.8rem 0.95rem;
-  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -324,9 +521,9 @@ body {
 }
 
 .trust-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: rgba(6, 182, 212, 0.1);
   border: 1px solid rgba(6, 182, 212, 0.2);
   display: flex;
@@ -337,7 +534,7 @@ body {
 }
 
 .trust-card h4 {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
 }
 
@@ -349,9 +546,10 @@ body {
 /* Telemetri Pelayan */
 .server-bar {
   background: var(--bg-surface);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border-ui);
-  padding: 0.8rem 1rem;
-  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
   margin-bottom: 1.4rem;
   display: flex;
   flex-direction: column;
@@ -376,14 +574,16 @@ body {
   background: var(--bg-deep);
   border: 1px solid var(--border-ui);
   padding: 0.35rem 0.65rem;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.74rem;
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-/* Dashboard Baki & Ganjaran */
+/* ========================================================
+   DASHBOARD TILES (WALLET, STREAK, VOTE)
+   ======================================================== */
 .dash-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -399,9 +599,10 @@ body {
 
 .dash-card {
   background: var(--bg-card);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border-ui);
-  padding: 1.05rem;
-  border-radius: 14px;
+  padding: 1.1rem;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -429,7 +630,9 @@ body {
   background: rgba(245, 158, 11, 0.1);
 }
 
-/* Katalog Produk & Penapis */
+/* ========================================================
+   PRODUCT CATALOG (TOPUP STYLE)
+   ======================================================== */
 .catalog-header {
   display: flex;
   flex-direction: column;
@@ -497,7 +700,6 @@ body {
   box-shadow: 0 0 12px var(--cyan-glow);
 }
 
-/* Grid Produk */
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -520,20 +722,21 @@ body {
 
 .product-card {
   background: var(--bg-card);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border-ui);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 0.95rem 0.85rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
 }
 
 .product-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   border-color: var(--border-glow);
-  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.15);
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.16);
 }
 
 .ribbon-badge {
@@ -612,7 +815,7 @@ body {
   background: linear-gradient(135deg, var(--cyan), #0284c7);
   color: #fff;
   border: none;
-  padding: 0.52rem;
+  padding: 0.54rem;
   border-radius: 8px;
   font-weight: 800;
   font-size: 0.74rem;
@@ -621,7 +824,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  box-shadow: 0 4px 12px var(--cyan-glow);
+  box-shadow: 0 4px 14px var(--cyan-glow);
   transition: all 0.2s;
 }
 
@@ -629,12 +832,15 @@ body {
   filter: brightness(1.1);
 }
 
-/* FAQ & WhatsApp */
+/* ========================================================
+   FAQ, WHATSAPP & CLAIMS
+   ======================================================== */
 .faq-section {
   background: var(--bg-surface);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border-ui);
-  border-radius: 14px;
-  padding: 1.2rem;
+  border-radius: 16px;
+  padding: 1.25rem;
   margin-bottom: 2rem;
 }
 
@@ -654,8 +860,8 @@ body {
 .faq-item {
   background: var(--bg-deep);
   border: 1px solid var(--border-ui);
-  border-radius: 10px;
-  padding: 0.8rem 0.95rem;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
 }
 
 .faq-item h5 {
@@ -673,8 +879,9 @@ body {
 
 .wa-banner {
   background: linear-gradient(135deg, rgba(37, 211, 102, 0.15), rgba(6, 182, 212, 0.1));
+  backdrop-filter: blur(14px);
   border: 1px solid rgba(37, 211, 102, 0.3);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 1.2rem;
   display: flex;
   flex-direction: column;
@@ -694,8 +901,9 @@ body {
 
 .claims-card {
   background: var(--bg-surface);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--border-ui);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 1.1rem;
   margin-bottom: 2rem;
 }
@@ -703,7 +911,7 @@ body {
 .claim-row {
   background: var(--bg-deep);
   border: 1px solid var(--border-ui);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.65rem 0.85rem;
   display: flex;
   justify-content: space-between;
@@ -721,12 +929,14 @@ body {
 .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
 .badge-done { background: rgba(0, 192, 135, 0.15); color: var(--green); }
 
-/* Modals */
+/* ========================================================
+   MODALS (LIQUID GLASS POPUP)
+   ======================================================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -741,20 +951,22 @@ body {
 }
 
 .modal-content {
-  background: #0d152a;
-  border: 1px solid var(--border-ui);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
+  background: rgba(13, 21, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glow);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
   padding: 1.35rem 1.1rem 2rem 1.1rem;
   width: 100%;
   max-width: 480px;
   max-height: 85vh;
   overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
 }
 
 @media (min-width: 640px) {
   .modal-content {
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 1.5rem;
   }
 }
@@ -799,10 +1011,10 @@ body {
   background: var(--cyan);
   color: #000;
   padding: 0.65rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 800;
   font-size: 0.78rem;
   text-align: center;
   box-shadow: 0 0 20px var(--cyan-glow);
   z-index: 10000;
-}
+  }
