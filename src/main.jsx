@@ -6,7 +6,7 @@ import {
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
   Copy, Check, PlusCircle, Ticket, BarChart3, LineChart, 
   MessageCircle, ArrowDownToLine, Terminal, CheckCircle2,
-  ZoomIn, ZoomOut, RotateCcw
+  Clock, History, Flame, SlidersHorizontal
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -16,22 +16,21 @@ const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent
 const RATE_RM_TO_SCOREBOARD = 1000;
 
 const generateRandomPinCode = () => {
-  const part1 = Math.floor(1000 + Math.random() * 9000);
-  const part2 = Math.floor(1000 + Math.random() * 9000);
-  return `BK5-${part1}-${part2}`;
+  const p1 = Math.floor(1000 + Math.random() * 9000);
+  const p2 = Math.floor(1000 + Math.random() * 9000);
+  return `BK5-${p1}-${p2}`;
 };
 
-// Menjana data lilin awal dengan rekod sejarah yang mencukupi
 const generateInitialCandles = () => {
   let base = 2.40;
   const list = [];
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 22; i++) {
     const delta = (Math.random() * 0.08 - 0.04);
     const open = base;
     const close = Math.max(0.01, +(open + delta).toFixed(4));
     const high = +(Math.max(open, close) + Math.random() * 0.03).toFixed(4);
     const low = +(Math.min(open, close) - Math.random() * 0.03).toFixed(4);
-    list.push({ id: i, open, close, high, low });
+    list.push({ id: i, open, close, high, low, time: `${i}:00` });
     base = close;
   }
   return list;
@@ -54,28 +53,26 @@ function App() {
 
   // Pasaran & Graf
   const [chartMode, setChartMode] = useState("candle");
+  const [timeframe, setTimeframe] = useState("1M");
   const [price, setPrice] = useState(2.50);
   const [prevPrice, setPrevPrice] = useState(2.50);
   const [candles, setCandles] = useState(generateInitialCandles);
   const [priceHistory, setPriceHistory] = useState([2.30, 2.38, 2.45, 2.42, 2.50]);
   const [marketBias, setMarketBias] = useState("neutral");
 
-  // ZOOM CONTROLS (Bilangan lilin/titik yang dipaparkan)
-  // Default: 18, Min: 10 (Zoom In Terperinci), Max: 40 (Zoom Out Sejarah Penuh)
-  const [zoomCount, setZoomCount] = useState(18);
-
-  // SEJARAH PIPS (1 Pip = 0.0001)
+  // SEJARAH PIPS & LEVERAGE (1 Pip = 0.0001)
+  const [leverage, setLeverage] = useState(1);
   const [pipsHistory, setPipsHistory] = useState([
-    { id: 1, pips: "+12.0", isPositive: true, time: "Baru tadi" },
-    { id: 2, pips: "-4.5", isPositive: false, time: "1m lepas" },
-    { id: 3, pips: "+25.1", isPositive: true, time: "2m lepas" }
+    { id: 1, pips: "+12.0", type: "TICK", oldPrice: 2.4880, newPrice: 2.5000, isPositive: true, time: "11:05:12" },
+    { id: 2, pips: "-4.5", type: "TICK", oldPrice: 2.4925, newPrice: 2.4880, isPositive: false, time: "11:04:45" },
+    { id: 3, pips: "+25.0", type: "PUMP", oldPrice: 2.4675, newPrice: 2.4925, isPositive: true, time: "11:03:30" }
   ]);
 
   // Transaksi
   const [tradeAmount, setTradeAmount] = useState("");
   const [orderType, setOrderType] = useState("buy");
 
-  // Sistem Baucar PIN
+  // Baucar PIN Database
   const [pinDatabase, setPinDatabase] = useState(() => {
     const savedPins = localStorage.getItem("baka_pin_database");
     return savedPins ? JSON.parse(savedPins) : [
@@ -103,8 +100,6 @@ function App() {
   const [withdrawAmountRM, setWithdrawAmountRM] = useState("5");
 
   const [showAdmin, setShowAdmin] = useState(false);
-
-  // Admin Auth
   const [adminPinInput, setAdminPinInput] = useState("");
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [toast, setToast] = useState("");
@@ -135,7 +130,7 @@ function App() {
     localStorage.setItem("baka_withdraw_requests", JSON.stringify(withdrawRequests));
   }, [withdrawRequests]);
 
-  // Gelung Pasaran Masa Nyata, Candlestick & Kiraan Pips
+  // Gelung Pasaran Masa Nyata & Pips Logger
   useEffect(() => {
     let tickCounter = 0;
 
@@ -147,20 +142,24 @@ function App() {
         if (marketBias === "bear") change -= 0.02;
 
         const next = Math.max(0.01, +(current * (1 + change)).toFixed(4));
-        setPriceHistory((h) => [...h.slice(-45), next]);
+        setPriceHistory((h) => [...h.slice(-30), next]);
 
-        // Kiraan Pips: (next - current) * 10,000
+        // Rekod pergerakan Pips
         const deltaPipsVal = +((next - current) * 10000).toFixed(1);
         if (deltaPipsVal !== 0) {
           const newPipRecord = {
             id: Date.now(),
             pips: deltaPipsVal > 0 ? `+${deltaPipsVal}` : `${deltaPipsVal}`,
+            type: Math.abs(deltaPipsVal) > 50 ? "VOLATILE" : "TICK",
+            oldPrice: current,
+            newPrice: next,
             isPositive: deltaPipsVal > 0,
             time: new Date().toLocaleTimeString()
           };
-          setPipsHistory((prev) => [newPipRecord, ...prev.slice(0, 10)]);
+          setPipsHistory((prev) => [newPipRecord, ...prev.slice(0, 14)]);
         }
 
+        // Kemas kini Candlestick
         setCandles((prevCandles) => {
           tickCounter++;
           const lastCandle = prevCandles[prevCandles.length - 1];
@@ -172,9 +171,10 @@ function App() {
               open: next,
               close: next,
               high: next,
-              low: next
+              low: next,
+              time: new Date().toLocaleTimeString().slice(0, 5)
             };
-            return [...prevCandles.slice(-44), newCandle];
+            return [...prevCandles.slice(-21), newCandle];
           } else {
             const updated = {
               ...lastCandle,
@@ -192,19 +192,6 @@ function App() {
 
     return () => clearInterval(interval);
   }, [marketBias]);
-
-  // Fungsi Zoom In dan Zoom Out
-  const handleZoomIn = () => {
-    setZoomCount((prev) => Math.max(10, prev - 4));
-  };
-
-  const handleZoomOut = () => {
-    setZoomCount((prev) => Math.min(40, prev + 4));
-  };
-
-  const handleResetZoom = () => {
-    setZoomCount(18);
-  };
 
   const handleRegister = (e) => {
     e.preventDefault();
@@ -283,15 +270,24 @@ function App() {
     if (!qty || qty <= 0) return;
 
     if (orderType === "buy") {
-      const cost = +(qty * price).toFixed(2);
-      if (currentUser.fiatBalance < cost) {
+      const baseCost = +(qty * price).toFixed(2);
+      const marginCost = +(baseCost / leverage).toFixed(2);
+
+      if (currentUser.fiatBalance < marginCost) {
         showToast("Baki RM tidak mencukupi! Sila beli PIN di WhatsApp Admin.");
         return;
       }
 
-      const newFiat = +(currentUser.fiatBalance - cost).toFixed(2);
-      const newBaka = +(currentUser.bakaBalance + qty).toFixed(4);
-      const newTrade = { id: Date.now(), type: "BUY", qty, price, total: cost, time: new Date().toLocaleTimeString() };
+      const newFiat = +(currentUser.fiatBalance - marginCost).toFixed(2);
+      const newBaka = +(currentUser.bakaBalance + qty * leverage).toFixed(4);
+      const newTrade = { 
+        id: Date.now(), 
+        type: `BUY (${leverage}x)`, 
+        qty: qty * leverage, 
+        price, 
+        total: marginCost, 
+        time: new Date().toLocaleTimeString() 
+      };
 
       updateCurrentUserData({
         fiatBalance: newFiat,
@@ -299,17 +295,24 @@ function App() {
         trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
       });
 
-      showToast(`Berjaya Beli ${qty} $BAKA (RM ${cost})`);
+      showToast(`Berjaya Beli ${qty * leverage} $BAKA (Margin: RM ${marginCost})`);
     } else {
       if (currentUser.bakaBalance < qty) {
         showToast("Baki $BAKA tidak mencukupi!");
         return;
       }
 
-      const gains = +(qty * price).toFixed(2);
+      const totalGain = +(qty * price).toFixed(2);
       const newBaka = +(currentUser.bakaBalance - qty).toFixed(4);
-      const newFiat = +(currentUser.fiatBalance + gains).toFixed(2);
-      const newTrade = { id: Date.now(), type: "SELL", qty, price, total: gains, time: new Date().toLocaleTimeString() };
+      const newFiat = +(currentUser.fiatBalance + totalGain).toFixed(2);
+      const newTrade = { 
+        id: Date.now(), 
+        type: `SELL (${leverage}x)`, 
+        qty, 
+        price, 
+        total: totalGain, 
+        time: new Date().toLocaleTimeString() 
+      };
 
       updateCurrentUserData({
         fiatBalance: newFiat,
@@ -317,7 +320,7 @@ function App() {
         trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
       });
 
-      showToast(`Berjaya Jual ${qty} $BAKA (+RM ${gains})`);
+      showToast(`Berjaya Jual ${qty} $BAKA (+RM ${totalGain})`);
     }
     setTradeAmount("");
   };
@@ -338,7 +341,7 @@ function App() {
     }
 
     if (targetPin.status === "USED") {
-      showToast(`❌ PIN ini telah ditebus oleh ${targetPin.usedBy || "pengguna lain"}!`);
+      showToast(`❌ PIN telah ditebus oleh ${targetPin.usedBy || "pengguna lain"}!`);
       return;
     }
 
@@ -370,7 +373,7 @@ function App() {
     const ign = withdrawGamerTag.trim();
 
     if (!ign) {
-      showToast("Sila masukkan Minecraft GamerTag / IGN anda!");
+      showToast("Sila masukkan GamerTag Minecraft anda!");
       return;
     }
 
@@ -380,7 +383,7 @@ function App() {
     }
 
     if (currentUser.fiatBalance < amt) {
-      showToast("Baki modal RM anda tidak mencukupi untuk withdraw!");
+      showToast("Baki modal RM anda tidak mencukupi!");
       return;
     }
 
@@ -404,7 +407,7 @@ function App() {
     setWithdrawRequests([newRequest, ...withdrawRequests]);
     setShowWithdrawModal(false);
     setWithdrawGamerTag("");
-    showToast(`✅ Permintaan Withdraw RM ${amt.toFixed(2)} ($${scoreboardEarned.toLocaleString()} Money) dihantar ke Admin!`);
+    showToast(`✅ Permintaan Withdraw RM ${amt.toFixed(2)} ($${scoreboardEarned.toLocaleString()} Money) dihantar!`);
   };
 
   const handleApproveWithdraw = (id) => {
@@ -448,7 +451,15 @@ function App() {
   const triggerPump = (pct) => {
     setPrice((curr) => {
       const next = +(curr * (1 + pct / 100)).toFixed(4);
-      setPriceHistory((h) => [...h.slice(-45), next]);
+      setPriceHistory((h) => [...h.slice(-30), next]);
+
+      // Catat ke Sejarah Pips
+      const pipsAdded = +((next - curr) * 10000).toFixed(1);
+      setPipsHistory((prev) => [
+        { id: Date.now(), pips: `+${pipsAdded}`, type: "ADMIN PUMP", oldPrice: curr, newPrice: next, isPositive: true, time: new Date().toLocaleTimeString() },
+        ...prev.slice(0, 14)
+      ]);
+
       setCandles((cList) => {
         const last = cList[cList.length - 1];
         const updated = { ...last, close: next, high: Math.max(last.high, next) };
@@ -462,7 +473,15 @@ function App() {
   const triggerDump = (pct) => {
     setPrice((curr) => {
       const next = Math.max(0.01, +(curr * (1 - pct / 100)).toFixed(4));
-      setPriceHistory((h) => [...h.slice(-45), next]);
+      setPriceHistory((h) => [...h.slice(-30), next]);
+
+      // Catat ke Sejarah Pips
+      const pipsLost = +((next - curr) * 10000).toFixed(1);
+      setPipsHistory((prev) => [
+        { id: Date.now(), pips: `${pipsLost}`, type: "ADMIN DUMP", oldPrice: curr, newPrice: next, isPositive: false, time: new Date().toLocaleTimeString() },
+        ...prev.slice(0, 14)
+      ]);
+
       setCandles((cList) => {
         const last = cList[cList.length - 1];
         const updated = { ...last, close: next, low: Math.min(last.low, next) };
@@ -473,13 +492,9 @@ function App() {
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // PEMILIHAN DATA IKUT TAHAP ZOOM
-  const visibleCandles = candles.slice(-zoomCount);
-  const visiblePriceHistory = priceHistory.slice(-zoomCount);
-
-  // PENGIRAAN SKALA & GRID GRAF IKUT DATA ZOOM
-  const allCandleHighs = visibleCandles.map((c) => c.high);
-  const allCandleLows = visibleCandles.map((c) => c.low);
+  // PENGIRAAN SKALA & GRID GRAF
+  const allCandleHighs = candles.map((c) => c.high);
+  const allCandleLows = candles.map((c) => c.low);
   const minCandle = Math.min(...allCandleLows) * 0.992;
   const maxCandle = Math.max(...allCandleHighs) * 1.008;
   const candleRange = maxCandle - minCandle || 1;
@@ -492,19 +507,17 @@ function App() {
 
   const verticalGridXs = [50, 130, 210, 290, 370];
 
-  const minP = Math.min(...visiblePriceHistory) * 0.985;
-  const maxP = Math.max(...visiblePriceHistory) * 1.015;
-  const linePoints = visiblePriceHistory.map((val, idx) => {
-    const x = (idx / (visiblePriceHistory.length - 1)) * 430 + 10;
+  const minP = Math.min(...priceHistory) * 0.985;
+  const maxP = Math.max(...priceHistory) * 1.015;
+  const linePoints = priceHistory.map((val, idx) => {
+    const x = (idx / (priceHistory.length - 1)) * 430 + 10;
     const y = 220 - ((val - minP) / (maxP - minP || 1)) * 180;
     return `${x},${y}`;
   }).join(" ");
 
   const isUp = price >= prevPrice;
   const currentPriceY = getY(price);
-  const latestCandle = visibleCandles[visibleCandles.length - 1] || { open: price, high: price, low: price, close: price };
-
-  // Kiraan Pips Semasa (Perbezaan tick semasa)
+  const latestCandle = candles[candles.length - 1] || { open: price, high: price, low: price, close: price };
   const currentTickPips = +((price - prevPrice) * 10000).toFixed(1);
 
   return (
@@ -518,9 +531,9 @@ function App() {
             <Activity size={24} />
           </div>
           <div>
-            <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Exchange</h2>
+            <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Pro</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Platform Dagangan, Pips Counter & Zoom Interaktif
+              Sistem Dagangan, Pips History & Minecraft Scoreboard
             </p>
           </div>
         </div>
@@ -533,7 +546,7 @@ function App() {
               </button>
 
               <button className="btn-pill btn-withdraw mono" onClick={() => setShowWithdrawModal(true)}>
-                <ArrowDownToLine size={15} /> Withdraw ke Server
+                <ArrowDownToLine size={15} /> Withdraw Server
               </button>
 
               <button className="btn-pill btn-redeem mono" onClick={() => setShowRedeemModal(true)}>
@@ -556,7 +569,7 @@ function App() {
         </div>
       </header>
 
-      {/* Stats Pengguna & Petak Tindakan */}
+      {/* Stats Pengguna */}
       <section className="stats-grid">
         <div className="card">
           <span className="stat-label mono">Baki Modal Tunai (MYR)</span>
@@ -591,7 +604,7 @@ function App() {
             {currentUser ? currentUser.bakaBalance.toFixed(4) : "0.0000"} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
-            Boleh dijual bila-bila masa
+            Boleh dijual bila-bila masa untuk dapatkan RM
           </span>
         </div>
 
@@ -601,14 +614,14 @@ function App() {
             RM 1.00 = $1,000
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
-            Scoreboard Money Bedrock (Objektif: money)
+            Scoreboard Bedrock (Objektif: money)
           </span>
         </div>
       </section>
 
       {/* Trading Grid */}
       <div className="trading-grid">
-        {/* Graf Carta Pasaran dengan Zoom & Pips History */}
+        {/* Graf Carta Pasaran dengan Pips Tracker & Timeframe */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
@@ -618,15 +631,27 @@ function App() {
               </div>
             </div>
 
-            {/* Kawalan Toolbar: Mod Lilin + Butang Zoom In/Out */}
             <div className="chart-controls-toolbar">
-              {/* Pips Tracker Badge */}
+              {/* Pips Meter Badge */}
               <div className="pips-badge mono" style={{ color: currentTickPips >= 0 ? "var(--green)" : "var(--red)" }}>
                 {currentTickPips >= 0 ? `+${currentTickPips}` : `${currentTickPips}`} Pips
               </div>
 
+              {/* Pilihan Timeframe */}
+              <div className="btn-group">
+                {["1M", "5M", "15M", "1H"].map((tf) => (
+                  <button
+                    key={tf}
+                    className={`btn-mode mono ${timeframe === tf ? "active" : ""}`}
+                    onClick={() => { setTimeframe(tf); showToast(`Timeframe ditukar ke ${tf}`); }}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+
               {/* Pilihan Mod Carta */}
-              <div className="chart-mode-group">
+              <div className="btn-group">
                 <button 
                   className={`btn-mode mono ${chartMode === "candle" ? "active" : ""}`}
                   onClick={() => setChartMode("candle")}
@@ -640,40 +665,10 @@ function App() {
                   <LineChart size={14} /> Line
                 </button>
               </div>
-
-              {/* Butang Zoom In / Zoom Out */}
-              <div className="zoom-group">
-                <button
-                  className="btn-mode mono"
-                  onClick={handleZoomIn}
-                  disabled={zoomCount <= 10}
-                  title="Zoom In (Lihat lebih terperinci)"
-                >
-                  <ZoomIn size={14} />
-                </button>
-                <span className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", padding: "0 0.2rem" }}>
-                  {zoomCount}L
-                </span>
-                <button
-                  className="btn-mode mono"
-                  onClick={handleZoomOut}
-                  disabled={zoomCount >= 40}
-                  title="Zoom Out (Lihat sejarah lebih panjang)"
-                >
-                  <ZoomOut size={14} />
-                </button>
-                <button
-                  className="btn-mode mono"
-                  onClick={handleResetZoom}
-                  title="Reset Zoom"
-                >
-                  <RotateCcw size={12} />
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Info Bar OHLC */}
+          {/* Bar Info OHLC */}
           <div className="ohlc-bar mono">
             <div style={{ display: "flex", gap: "0.6rem" }}>
               <span>O: <strong style={{ color: "#fff" }}>{latestCandle.open.toFixed(3)}</strong></span>
@@ -681,7 +676,7 @@ function App() {
               <span>L: <strong style={{ color: "var(--red)" }}>{latestCandle.low.toFixed(3)}</strong></span>
               <span>C: <strong style={{ color: "#fff" }}>{latestCandle.close.toFixed(3)}</strong></span>
             </div>
-            <span>Paparan: {zoomCount} lilin aktif</span>
+            <span>Timeframe: {timeframe}</span>
           </div>
 
           {/* Paparan SVG Chart */}
@@ -751,10 +746,9 @@ function App() {
               </text>
 
               {chartMode === "candle" ? (
-                visibleCandles.map((c, i) => {
-                  // Lebar lilin menyesuaikan secara dinamik mengikut tahap Zoom
-                  const candleWidth = Math.max(6, Math.min(20, Math.floor(390 / visibleCandles.length) - 3));
-                  const x = 15 + i * (410 / visibleCandles.length);
+                candles.map((c, i) => {
+                  const candleWidth = 12;
+                  const x = 15 + i * (410 / candles.length);
                   const isBullish = c.close >= c.open;
                   const candleColor = isBullish ? "var(--green)" : "var(--red)";
 
@@ -797,26 +791,9 @@ function App() {
               )}
             </svg>
           </div>
-
-          {/* BAR PITA SEJARAH PIPS (PIPS HISTORY TICKER) */}
-          <div className="pips-history-strip mono">
-            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", alignSelf: "center", marginRight: "0.2rem" }}>
-              Sejarah Pips:
-            </span>
-            {pipsHistory.map((item) => (
-              <div key={item.id} className="pips-pill">
-                <span style={{ color: item.isPositive ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
-                  {item.pips}
-                </span>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.65rem" }}>
-                  ({item.time})
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
 
-        {/* Order Desk */}
+        {/* Meja Pesanan & Leverage */}
         <div className="card">
           <div className="tab-row">
             <button 
@@ -833,8 +810,27 @@ function App() {
             </button>
           </div>
 
+          {/* Gandaan Leverage */}
+          <div>
+            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <Flame size={13} color="var(--gold)" /> GANDAAN LEVERAGE
+            </span>
+            <div className="leverage-selector mono">
+              {[1, 2, 5, 10].map((lev) => (
+                <button
+                  key={lev}
+                  type="button"
+                  className={`btn-lev ${leverage === lev ? "active" : ""}`}
+                  onClick={() => setLeverage(lev)}
+                >
+                  {lev}x
+                </button>
+              ))}
+            </div>
+          </div>
+
           <form onSubmit={handleExecuteTrade}>
-            <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
               KUANTITI $BAKA
             </label>
             <input
@@ -847,10 +843,16 @@ function App() {
               required
             />
 
-            <div style={{ background: "#090e1a", padding: "0.8rem", borderRadius: "8px", marginTop: "1rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                <span>Jumlah Harga:</span>
+            <div style={{ background: "#060913", padding: "0.75rem", borderRadius: "8px", marginTop: "0.8rem", border: "1px solid var(--border-ui)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                <span>Nilai Posisi:</span>
                 <span className="mono" style={{ color: "#fff", fontWeight: 700 }}>
+                  RM {((parseFloat(tradeAmount) || 0) * price * leverage).toFixed(2)}
+                </span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                <span>Margin Diperlukan:</span>
+                <span className="mono" style={{ color: "var(--gold)", fontWeight: 700 }}>
                   RM {((parseFloat(tradeAmount) || 0) * price).toFixed(2)}
                 </span>
               </div>
@@ -858,14 +860,98 @@ function App() {
 
             <button type="submit" className={`btn-action-order mono ${orderType}`}>
               {currentUser
-                ? orderType === "buy" ? "Sahkan Beli $BAKA" : "Sahkan Jual $BAKA"
+                ? orderType === "buy" ? `Sahkan Beli (${leverage}x)` : `Sahkan Jual (${leverage}x)`
                 : "Log Masuk Untuk Berdagang"}
             </button>
           </form>
         </div>
       </div>
 
-      {/* MODAL WITHDRAW KE SERVER */}
+      {/* SEKSYEN REKOD SEJARAH: PIPS HISTORY & USER TRADES */}
+      <section className="history-section">
+        {/* Jadual Rekod Sejarah Pips */}
+        <div className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <h4 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <History size={16} color="var(--cyan)" /> Rekod Sejarah Pergerakan Pips
+            </h4>
+            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>1 Pip = 0.0001</span>
+          </div>
+
+          <div className="table-box">
+            <table>
+              <thead>
+                <tr>
+                  <th>Masa</th>
+                  <th>Perubahan</th>
+                  <th>Jenis</th>
+                  <th>Harga Lama ➡️ Baru</th>
+                </tr>
+              </thead>
+              <tbody className="mono">
+                {pipsHistory.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.time}</td>
+                    <td style={{ color: item.isPositive ? "var(--green)" : "var(--red)", fontWeight: 800 }}>
+                      {item.pips} Pips
+                    </td>
+                    <td>
+                      <span className="badge-status" style={{ background: item.type === "ADMIN PUMP" ? "rgba(0,192,135,0.2)" : item.type === "ADMIN DUMP" ? "rgba(244,63,94,0.2)" : "rgba(255,255,255,0.06)", color: item.isPositive ? "var(--green)" : "var(--red)" }}>
+                        {item.type}
+                      </span>
+                    </td>
+                    <td>{item.oldPrice.toFixed(4)} ➔ {item.newPrice.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Jadual Sejarah Transaksi Pedagang */}
+        <div className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <h4 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <Clock size={16} color="var(--gold)" /> Sejarah Transaksi Pengguna
+            </h4>
+          </div>
+
+          <div className="table-box">
+            <table>
+              <thead>
+                <tr>
+                  <th>Masa</th>
+                  <th>Jenis</th>
+                  <th>Kuantiti</th>
+                  <th>Jumlah (RM)</th>
+                </tr>
+              </thead>
+              <tbody className="mono">
+                {currentUser && currentUser.trades && currentUser.trades.length > 0 ? (
+                  currentUser.trades.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.time}</td>
+                      <td style={{ color: t.type.includes("BUY") ? "var(--green)" : "var(--red)", fontWeight: 700 }}>
+                        {t.type}
+                      </td>
+                      <td>{t.qty.toFixed(2)}</td>
+                      <td>RM {t.total.toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "1.5rem" }}>
+                      Belum ada rekod transaksi.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* MODAL WITHDRAW KE SERVER MINECRAFT */}
       {showWithdrawModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -914,7 +1000,7 @@ function App() {
                 />
               </div>
 
-              <div style={{ background: "#090e1a", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "1.2rem" }}>
+              <div style={{ background: "#060913", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "1.2rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
                   <span style={{ color: "var(--text-muted)" }}>Duit Scoreboard Diterima:</span>
                   <span className="mono" style={{ color: "var(--green)", fontWeight: 800 }}>
@@ -998,7 +1084,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TEBUS PIN (RM5) */}
+      {/* MODAL TEBUS PIN */}
       {showRedeemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -1064,7 +1150,7 @@ function App() {
             {!isAdminAuth ? (
               <form onSubmit={handleAdminVerify}>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>
-                  Masukkan PIN Pentadbir (200200) untuk menguruskan pengeluaran dan pasaran:
+                  Masukkan PIN Pentadbir (200200) untuk kawal pasaran & jana PIN:
                 </p>
                 <input
                   type="password"
@@ -1082,8 +1168,8 @@ function App() {
               </form>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-                {/* SENARAI PENGELUARAN KE SERVER */}
-                <div style={{ background: "#090e1a", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
+                {/* Permintaan Withdraw */}
+                <div style={{ background: "#060913", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                     <h4 style={{ fontSize: "0.95rem", color: "var(--cyan)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
                       <Terminal size={16} /> Permintaan Withdraw Duit Scoreboard ({withdrawRequests.length})
@@ -1097,7 +1183,7 @@ function App() {
                       </p>
                     ) : (
                       withdrawRequests.map((req) => (
-                        <div key={req.id} style={{ background: "#060913", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
+                        <div key={req.id} style={{ background: "#0b1120", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
                               <strong style={{ color: "#fff" }}>IGN: {req.gamerTag}</strong>
@@ -1136,8 +1222,8 @@ function App() {
                   </div>
                 </div>
 
-                {/* Penjana PIN Sekali Pakai (RM5) */}
-                <div style={{ background: "#090e1a", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
+                {/* Penjana PIN */}
+                <div style={{ background: "#060913", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <h4 style={{ fontSize: "0.95rem", color: "var(--green)" }}>Jana PIN Top-up RM 5</h4>
@@ -1178,7 +1264,7 @@ function App() {
                   </div>
                 </div>
 
-                {/* Kawalan PUMP & DUMP */}
+                {/* Kawalan PUMP & DUMP Pasaran */}
                 <div>
                   <span className="mono" style={{ fontSize: "0.75rem", color: "var(--green)" }}>KAWALAN PUMP (LONJAKAN HARGA)</span>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.3rem" }}>
