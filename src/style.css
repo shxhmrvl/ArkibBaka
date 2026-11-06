@@ -86,6 +86,8 @@ body {
   border-radius: 14px;
   margin: 0.85rem 0 1.25rem 0;
   gap: 0.5rem;
+  position: relative;
+  z-index: 100;
 }
 
 .brand {
@@ -164,6 +166,100 @@ body {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ========================================================
+   THREE-DOT DROPDOWN MENU
+   ======================================================== */
+.three-dots-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-three-dots {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-ui);
+  color: var(--text-main);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-three-dots:hover,
+.btn-three-dots.active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan-glow);
+}
+
+.three-dots-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 215px;
+  background: #0d152a;
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(6, 182, 212, 0.12);
+  padding: 0.4rem;
+  z-index: 1000;
+  transform-origin: top right;
+  animation: menuSlideFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes menuSlideFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--cyan);
+  transform: translateX(2px);
+}
+
+.dropdown-item.admin-highlight {
+  color: var(--gold);
+}
+
+.dropdown-item.admin-highlight:hover {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-ui);
+  margin: 0.35rem 0.4rem;
 }
 
 /* 3. Hero Section */
@@ -649,7 +745,7 @@ body {
   border: 1px solid var(--border-ui);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  padding: 1.3rem 1.1rem 2rem 1.1rem;
+  padding: 1.35rem 1.1rem 2rem 1.1rem;
   width: 100%;
   max-width: 480px;
   max-height: 85vh;
