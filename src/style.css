@@ -1,23 +1,26 @@
 :root {
-  --bg-deep: #030712;
-  --bg-card: rgba(15, 23, 42, 0.7);
-  --bg-card-solid: #0b1222;
-  --bg-subtle: #080d1a;
-  --bg-input: #040711;
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-active: rgba(0, 192, 135, 0.4);
+  --bg-deep: #050813;
+  --bg-surface: #0a1022;
+  --bg-card: #0e172e;
+  --bg-card-hover: #131f3e;
+  --bg-input: #060a17;
   
-  --green: #00c087;
-  --green-glow: rgba(0, 192, 135, 0.25);
+  --border-ui: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(6, 182, 212, 0.35);
+  
   --cyan: #06b6d4;
+  --cyan-glow: rgba(6, 182, 212, 0.3);
+  --green: #00c087;
+  --green-glow: rgba(0, 192, 135, 0.3);
   --gold: #f59e0b;
-  --gold-glow: rgba(245, 158, 11, 0.25);
+  --gold-glow: rgba(245, 158, 11, 0.3);
+  --purple: #a855f7;
   --red: #f43f5e;
   --whatsapp: #25d366;
   
   --text-main: #f8fafc;
-  --text-muted: #8492a6;
-  --text-dim: #475569;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
 }
 
 * {
@@ -33,8 +36,8 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(0, 192, 135, 0.06) 0px, transparent 50%),
+    radial-gradient(circle at 15% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 40%),
+    radial-gradient(circle at 85% 100%, rgba(0, 192, 135, 0.06) 0px, transparent 40%),
     linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
@@ -46,95 +49,106 @@ body {
 }
 
 .container {
-  max-width: 1140px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 0.75rem 0.75rem 5rem 0.75rem;
+  padding: 0 0.85rem 5rem 0.85rem;
 }
 
-@media (min-width: 640px) {
-  .container {
-    padding: 1.25rem 1.25rem 6rem 1.25rem;
-  }
+/* 1. Marquee Pengumuman */
+.announcement-bar {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.15), rgba(0, 192, 135, 0.15));
+  border-bottom: 1px solid var(--border-ui);
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-/* Minimalist Glass Card */
-.glass {
-  background: var(--bg-card);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+.marquee-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-/* Navbar */
+/* 2. Navbar Moden */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.65rem 0.85rem;
-  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.95rem;
+  background: rgba(10, 16, 34, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  margin: 0.85rem 0 1.25rem 0;
   gap: 0.5rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--green), var(--cyan));
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--cyan), var(--green));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #000;
-  flex-shrink: 0;
+  box-shadow: 0 0 15px var(--cyan-glow);
 }
 
-.brand-name {
+.brand-title {
   font-size: 0.95rem;
   font-weight: 800;
-  line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
-.brand-tag {
+.brand-badge {
   font-size: 0.62rem;
-  color: var(--green);
+  color: var(--cyan);
+  font-weight: 700;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .btn-pill {
-  padding: 0.4rem 0.65rem;
+  padding: 0.42rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   border: none;
   text-decoration: none;
-  white-space: nowrap;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.btn-redeem {
+.btn-primary-gradient {
+  background: linear-gradient(135deg, var(--cyan), #0284c7);
+  color: #fff;
+  box-shadow: 0 0 15px var(--cyan-glow);
+}
+
+.btn-green-gradient {
   background: linear-gradient(135deg, var(--green), #059669);
   color: #000;
-}
-
-.btn-whatsapp {
-  background: linear-gradient(135deg, #25d366, #128c7e);
-  color: #fff;
+  box-shadow: 0 0 15px var(--green-glow);
 }
 
 .btn-admin {
@@ -145,27 +159,108 @@ body {
 
 .btn-user {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-ui);
   color: var(--text-main);
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.btn-logout {
-  background: rgba(244, 63, 94, 0.12);
-  border: 1px solid rgba(244, 63, 94, 0.3);
-  color: var(--red);
-  padding: 0.4rem 0.5rem;
+/* 3. Hero Section Ala FallXD */
+.hero-section {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem 1rem;
+  position: relative;
 }
 
-/* Telemetri Pelayan Bar */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  color: var(--cyan);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.hero-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin-bottom: 0.6rem;
+}
+
+.hero-title span {
+  background: linear-gradient(135deg, var(--cyan), var(--green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  max-width: 620px;
+  margin: 0 auto 1.5rem auto;
+  line-height: 1.5;
+}
+
+/* 3 Trust Cards */
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.trust-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ui);
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.trust-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan);
+  flex-shrink: 0;
+}
+
+.trust-card h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.trust-card p {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Server Telemetry Bar */
 .server-bar {
-  padding: 0.75rem 0.85rem;
-  margin-bottom: 0.85rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ui);
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -178,79 +273,59 @@ body {
 
 .conn-badges {
   display: flex;
-  gap: 0.4rem;
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .conn-badges {
-    width: auto;
-  }
+  gap: 0.45rem;
+  flex-wrap: wrap;
 }
 
 .badge-tag {
-  flex: 1;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  padding: 0.35rem 0.55rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
+  padding: 0.35rem 0.65rem;
   border-radius: 6px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.4rem;
 }
 
-/* Bento Top Dashboard */
-.bento-dash {
+/* User Balance & Freebie Grid */
+.dash-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  gap: 0.85rem;
+  margin-bottom: 1.8rem;
 }
 
 @media (min-width: 768px) {
-  .bento-dash {
-    grid-template-columns: 1.4fr 1fr 1fr;
-    gap: 1rem;
+  .dash-grid {
+    grid-template-columns: 1.3fr 1fr 1fr;
   }
 }
 
-.tile-wallet {
-  padding: 0.95rem;
+.dash-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-ui);
+  padding: 1.1rem;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-.tile-compact {
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.val-hero {
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0.2rem 0;
 }
 
 .streak-row {
   display: flex;
   gap: 0.25rem;
-  margin-top: 0.5rem;
+  margin-top: 0.6rem;
 }
 
 .streak-box {
   flex: 1;
   text-align: center;
-  padding: 0.28rem 0.15rem;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.15rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
   border-radius: 6px;
-  font-size: 0.64rem;
+  font-size: 0.65rem;
 }
 
 .streak-box.done {
@@ -259,251 +334,268 @@ body {
   background: rgba(245, 158, 11, 0.1);
 }
 
-.btn-tile-action {
-  width: 100%;
-  border: none;
-  padding: 0.48rem 0.5rem;
-  border-radius: 6px;
-  font-weight: 800;
-  font-size: 0.72rem;
-  cursor: pointer;
+/* 4. Katalog Produk Gaya FallXD */
+.catalog-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  margin-top: 0.6rem;
-  transition: opacity 0.2s;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.btn-tile-action:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* Swipeable Filter Bar */
-.store-header {
-  margin-bottom: 0.75rem;
-}
-
-.filter-scroll {
+.category-scroll {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.4rem;
   overflow-x: auto;
   white-space: nowrap;
-  padding: 0.4rem 0 0.6rem 0;
-  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.3rem;
   scrollbar-width: none;
 }
 
-.filter-scroll::-webkit-scrollbar {
+.category-scroll::-webkit-scrollbar {
   display: none;
 }
 
 .btn-filter {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ui);
   color: var(--text-muted);
-  padding: 0.35rem 0.75rem;
+  padding: 0.4rem 0.85rem;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
-  flex-shrink: 0;
   transition: all 0.2s;
 }
 
 .btn-filter.active {
-  background: var(--green);
+  background: var(--cyan);
   color: #000;
-  border-color: var(--green);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan-glow);
 }
 
-/* Asymmetric Bento Store */
-.bento-store {
+/* Grid Produk Responsif */
+.product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 768px) {
-  .bento-store {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.85rem;
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
   }
 }
 
-/* Bento Item: Hero (Span 2) */
-.item-hero {
-  grid-column: span 2;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.85), rgba(245, 158, 11, 0.04));
-  padding: 1rem;
-  border-radius: 12px;
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Kad Produk Gaya Topup */
+.product-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  padding: 1rem 0.9rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
+  transition: all 0.25s ease;
 }
 
-/* Bento Item: Standard (1 col) */
-.item-standard {
-  background: var(--bg-card-solid);
-  border: 1px solid var(--border-subtle);
-  padding: 0.8rem;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+.product-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glow);
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.15);
 }
 
-/* Bento Item: Compact (1 col) */
-.item-compact {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  padding: 0.75rem;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.item-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.4rem;
-}
-
-.item-icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: #040711;
-  border: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.item-tag {
+.ribbon-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
   font-size: 0.58rem;
-  padding: 0.12rem 0.35rem;
-  border-radius: 4px;
   font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
   text-transform: uppercase;
 }
 
-.tag-rank { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
-.tag-kit { background: rgba(6, 182, 212, 0.15); color: var(--cyan); }
-.tag-money { background: rgba(0, 192, 135, 0.15); color: var(--green); }
-.tag-crate { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.ribbon-best { background: rgba(245, 158, 11, 0.15); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); }
+.ribbon-pop { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+.ribbon-val { background: rgba(0, 192, 135, 0.15); color: var(--green); border: 1px solid rgba(0, 192, 135, 0.3); }
 
-.item-title {
-  font-size: 0.82rem;
+.product-icon-frame {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.product-name {
+  font-size: 0.9rem;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.3;
+  margin-bottom: 0.35rem;
 }
 
-.item-desc {
-  font-size: 0.68rem;
+.product-desc {
+  font-size: 0.7rem;
   color: var(--text-muted);
-  margin-top: 0.2rem;
-  line-height: 1.35;
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.hero-checklist {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.25rem;
-  margin: 0.5rem 0;
+.specs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
   font-size: 0.68rem;
   color: #cbd5e1;
 }
 
-@media (min-width: 640px) {
-  .hero-checklist {
-    grid-template-columns: 1fr 1fr;
-  }
+.spec-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.btn-buy-bento {
+.price-pill-box {
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.65rem;
+}
+
+.btn-buy-action {
   width: 100%;
-  background: linear-gradient(135deg, var(--green), #059669);
-  color: #000;
+  background: linear-gradient(135deg, var(--cyan), #0284c7);
+  color: #fff;
   border: none;
-  padding: 0.45rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.55rem;
+  border-radius: 8px;
   font-weight: 800;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  margin-top: 0.65rem;
+  gap: 0.3rem;
+  box-shadow: 0 4px 12px var(--cyan-glow);
+  transition: all 0.2s;
 }
 
-/* Maklumat Server Card */
-.server-info-card {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+.btn-buy-action:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
-.info-stats-grid {
+/* 5. FAQ & WhatsApp Support */
+.faq-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.faq-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.55rem;
-  margin: 0.75rem 0;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  margin-top: 1rem;
 }
 
 @media (min-width: 640px) {
-  .info-stats-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .faq-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-.info-stat-box {
-  background: #040711;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 0.6rem;
+.faq-item {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
 }
 
-.lore-tags {
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-  margin-top: 0.45rem;
-}
-
-.lore-tag {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.64rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
+.faq-item h5 {
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--cyan);
+  margin-bottom: 0.3rem;
+}
+
+.faq-item p {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* WhatsApp Contact Banner */
+.wa-banner {
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.15), rgba(6, 182, 212, 0.1));
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .wa-banner {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
 }
 
 /* Claims List */
 .claims-card {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  padding: 1.1rem;
+  margin-bottom: 2rem;
 }
 
 .claim-row {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.5rem;
 }
 
 .badge-status {
-  padding: 0.15rem 0.4rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 4px;
   font-size: 0.62rem;
   font-weight: 800;
@@ -522,7 +614,6 @@ body {
   align-items: flex-end;
   justify-content: center;
   z-index: 9999;
-  padding: 0;
 }
 
 @media (min-width: 640px) {
@@ -533,11 +624,11 @@ body {
 }
 
 .modal-content {
-  background: #0d1527;
-  border: 1px solid var(--border-subtle);
+  background: #0d152a;
+  border: 1px solid var(--border-ui);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  padding: 1.25rem 1rem 2rem 1rem;
+  padding: 1.35rem 1.1rem 2rem 1.1rem;
   width: 100%;
   max-width: 480px;
   max-height: 85vh;
@@ -553,26 +644,26 @@ body {
 
 .input-styled {
   width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-ui);
   color: #fff;
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   border-radius: 8px;
   outline: none;
   font-size: 0.88rem;
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
 }
 
 .input-styled:focus {
-  border-color: var(--green);
+  border-color: var(--cyan);
 }
 
 .command-snippet {
-  background: #040711;
+  background: #030611;
   border: 1px solid rgba(6, 182, 212, 0.25);
   padding: 0.45rem 0.65rem;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--cyan);
   display: flex;
   justify-content: space-between;
@@ -588,13 +679,13 @@ body {
   transform: translateX(-50%);
   width: 90%;
   max-width: 380px;
-  background: var(--green);
+  background: var(--cyan);
   color: #000;
   padding: 0.65rem 1rem;
   border-radius: 8px;
   font-weight: 800;
   font-size: 0.78rem;
   text-align: center;
-  box-shadow: 0 0 20px var(--green-glow);
+  box-shadow: 0 0 20px var(--cyan-glow);
   z-index: 10000;
 }
