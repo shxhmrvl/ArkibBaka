@@ -1,18 +1,23 @@
 :root {
-  --bg-main: #060913;
-  --bg-card: #0d1527;
-  --bg-card-sub: #080d1a;
-  --bg-input: #050811;
-  --border-ui: rgba(255, 255, 255, 0.08);
+  --bg-deep: #030712;
+  --bg-card: rgba(15, 23, 42, 0.7);
+  --bg-card-solid: #0b1222;
+  --bg-subtle: #080d1a;
+  --bg-input: #040711;
+  --border-subtle: rgba(255, 255, 255, 0.07);
   --border-active: rgba(0, 192, 135, 0.4);
+  
   --green: #00c087;
-  --green-glow: rgba(0, 192, 135, 0.35);
+  --green-glow: rgba(0, 192, 135, 0.25);
   --cyan: #06b6d4;
   --gold: #f59e0b;
+  --gold-glow: rgba(245, 158, 11, 0.25);
   --red: #f43f5e;
   --whatsapp: #25d366;
+  
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-muted: #8492a6;
+  --text-dim: #475569;
 }
 
 * {
@@ -24,12 +29,15 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: var(--bg-deep);
   color: var(--text-main);
   min-height: 100vh;
   background-image: 
-    radial-gradient(circle at 10% 0%, rgba(6, 182, 212, 0.08), transparent 40%),
-    radial-gradient(circle at 90% 100%, rgba(0, 192, 135, 0.08), transparent 40%);
+    radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 192, 135, 0.06) 0px, transparent 50%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 36px 36px, 36px 36px;
   overflow-x: hidden;
 }
 
@@ -38,40 +46,32 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 0.65rem 0.65rem 4rem 0.65rem;
+  padding: 0.75rem 0.75rem 5rem 0.75rem;
 }
 
 @media (min-width: 640px) {
   .container {
-    padding: 1rem 1rem 5rem 1rem;
+    padding: 1.25rem 1.25rem 6rem 1.25rem;
   }
 }
 
-.card {
+/* Minimalist Glass Card */
+.glass {
   background: var(--bg-card);
-  border: 1px solid var(--border-ui);
-  border-radius: 12px;
-  padding: 0.9rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
 }
 
-@media (min-width: 640px) {
-  .card {
-    border-radius: 14px;
-    padding: 1.25rem;
-  }
-}
-
-/* Navbar Mesra Mobile */
+/* Navbar */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.65rem 0.85rem;
-  background: #09101f;
-  border: 1px solid var(--border-ui);
-  border-radius: 12px;
   margin-bottom: 0.85rem;
   gap: 0.5rem;
 }
@@ -80,7 +80,6 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 0;
 }
 
 .brand-icon {
@@ -95,30 +94,28 @@ body {
   flex-shrink: 0;
 }
 
-.brand-text h2 {
+.brand-name {
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.1;
-  white-space: nowrap;
+  letter-spacing: -0.02em;
 }
 
-.brand-text p {
-  font-size: 0.65rem;
+.brand-tag {
+  font-size: 0.62rem;
   color: var(--green);
-  white-space: nowrap;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex-shrink: 0;
 }
 
 .btn-pill {
   padding: 0.4rem 0.65rem;
   border-radius: 8px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
@@ -133,43 +130,38 @@ body {
 .btn-redeem {
   background: linear-gradient(135deg, var(--green), #059669);
   color: #000;
-  font-weight: 800;
 }
 
 .btn-whatsapp {
   background: linear-gradient(135deg, #25d366, #128c7e);
   color: #fff;
-  font-weight: 700;
 }
 
 .btn-admin {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid var(--gold);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   color: var(--gold);
 }
 
 .btn-user {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-ui);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   color: var(--text-main);
-  max-width: 110px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .btn-logout {
-  background: rgba(244, 63, 94, 0.15);
-  border: 1px solid var(--red);
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
   color: var(--red);
   padding: 0.4rem 0.5rem;
 }
 
-/* Server Status Banner */
+/* Telemetri Pelayan Bar */
 .server-bar {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(0, 192, 135, 0.05));
-  border: 1px solid rgba(6, 182, 212, 0.25);
   padding: 0.75rem 0.85rem;
-  border-radius: 12px;
   margin-bottom: 0.85rem;
   display: flex;
   flex-direction: column;
@@ -181,7 +173,6 @@ body {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 0.9rem 1.15rem;
   }
 }
 
@@ -191,55 +182,73 @@ body {
   width: 100%;
 }
 
+@media (min-width: 640px) {
+  .conn-badges {
+    width: auto;
+  }
+}
+
 .badge-tag {
   flex: 1;
-  background: #060a14;
-  border: 1px solid var(--border-ui);
-  padding: 0.35rem 0.5rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.55rem;
   border-radius: 6px;
   font-size: 0.72rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.4rem;
 }
 
-/* 3-Column Dashboard Cards */
-.dash-grid {
+/* Bento Top Dashboard */
+.bento-dash {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.75rem;
   margin-bottom: 1.25rem;
 }
 
-@media (min-width: 640px) {
-  .dash-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (min-width: 768px) {
+  .bento-dash {
+    grid-template-columns: 1.4fr 1fr 1fr;
     gap: 1rem;
   }
 }
 
-.dash-card {
-  padding: 0.85rem;
+.tile-wallet {
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.val-big {
-  font-size: 1.4rem;
+.tile-compact {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.val-hero {
+  font-size: 1.6rem;
   font-weight: 800;
-  margin-top: 0.2rem;
+  letter-spacing: -0.02em;
+  margin: 0.2rem 0;
 }
 
 .streak-row {
   display: flex;
   gap: 0.25rem;
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
 }
 
 .streak-box {
   flex: 1;
   text-align: center;
   padding: 0.28rem 0.15rem;
-  background: var(--bg-card-sub);
-  border: 1px solid var(--border-ui);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   font-size: 0.64rem;
 }
@@ -250,20 +259,33 @@ body {
   background: rgba(245, 158, 11, 0.1);
 }
 
-/* Swipeable Filter Bar pada Mobile */
+.btn-tile-action {
+  width: 100%;
+  border: none;
+  padding: 0.48rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  transition: opacity 0.2s;
+}
+
+.btn-tile-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Swipeable Filter Bar */
 .store-header {
   margin-bottom: 0.75rem;
 }
 
-.store-header h3 {
-  font-size: 1.05rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.filter-group {
+.filter-scroll {
   display: flex;
   gap: 0.35rem;
   overflow-x: auto;
@@ -273,15 +295,15 @@ body {
   scrollbar-width: none;
 }
 
-.filter-group::-webkit-scrollbar {
+.filter-scroll::-webkit-scrollbar {
   display: none;
 }
 
 .btn-filter {
-  background: var(--bg-card-sub);
-  border: 1px solid var(--border-ui);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  padding: 0.35rem 0.7rem;
+  padding: 0.35rem 0.75rem;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -296,53 +318,68 @@ body {
   border-color: var(--green);
 }
 
-/* Grid 2-Lajur Mobile & 3-4 Lajur Desktop */
-.store-grid {
+/* Asymmetric Bento Store */
+.bento-store {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.55rem;
+  gap: 0.65rem;
   margin-bottom: 1.5rem;
 }
 
 @media (min-width: 768px) {
-  .store-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .bento-store {
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.85rem;
   }
 }
 
-@media (min-width: 1024px) {
-  .store-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-  }
-}
-
-/* Kad Item Mesra Skrin Kecil */
-.item-card {
+/* Bento Item: Hero (Span 2) */
+.item-hero {
+  grid-column: span 2;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.85), rgba(245, 158, 11, 0.04));
+  padding: 1rem;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border: 1px solid var(--border-ui);
-  background: #0b1222;
+}
+
+/* Bento Item: Standard (1 col) */
+.item-standard {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-subtle);
+  padding: 0.8rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Bento Item: Compact (1 col) */
+.item-compact {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 0.75rem;
   border-radius: 10px;
-  padding: 0.75rem 0.65rem;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .item-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.4rem;
 }
 
 .item-icon-box {
   width: 32px;
   height: 32px;
-  border-radius: 7px;
-  background: #070c18;
-  border: 1px solid var(--border-ui);
+  border-radius: 6px;
+  background: #040711;
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,7 +387,7 @@ body {
 
 .item-tag {
   font-size: 0.58rem;
-  padding: 0.12rem 0.38rem;
+  padding: 0.12rem 0.35rem;
   border-radius: 4px;
   font-weight: 800;
   text-transform: uppercase;
@@ -361,47 +398,40 @@ body {
 .tag-money { background: rgba(0, 192, 135, 0.15); color: var(--green); }
 .tag-crate { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
 
-.item-card h4 {
-  font-size: 0.78rem;
+.item-title {
+  font-size: 0.82rem;
   font-weight: 800;
   line-height: 1.25;
-  min-height: 2rem;
 }
 
-.item-card p {
-  font-size: 0.66rem;
+.item-desc {
+  font-size: 0.68rem;
   color: var(--text-muted);
   margin-top: 0.2rem;
   line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.item-bottom {
-  margin-top: 0.6rem;
+.hero-checklist {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  font-size: 0.68rem;
+  color: #cbd5e1;
 }
 
-.item-price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.4rem;
+@media (min-width: 640px) {
+  .hero-checklist {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
-.item-price-val {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--green);
-}
-
-.btn-buy-item {
+.btn-buy-bento {
   width: 100%;
   background: linear-gradient(135deg, var(--green), #059669);
   color: #000;
   border: none;
-  padding: 0.45rem 0.4rem;
+  padding: 0.45rem 0.5rem;
   border-radius: 6px;
   font-weight: 800;
   font-size: 0.72rem;
@@ -410,22 +440,20 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
+  margin-top: 0.65rem;
 }
 
-/* Info Pelayan BakaCrew Section */
+/* Maklumat Server Card */
 .server-info-card {
+  padding: 1rem;
   margin-bottom: 1.5rem;
-  background: #09101f;
-  border: 1px solid var(--border-ui);
-  border-radius: 12px;
-  padding: 0.95rem;
 }
 
 .info-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.55rem;
-  margin: 0.85rem 0;
+  margin: 0.75rem 0;
 }
 
 @media (min-width: 640px) {
@@ -435,8 +463,8 @@ body {
 }
 
 .info-stat-box {
-  background: #060a14;
-  border: 1px solid var(--border-ui);
+  background: #040711;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 0.6rem;
 }
@@ -450,28 +478,28 @@ body {
 
 .lore-tag {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-ui);
-  font-size: 0.65rem;
+  border: 1px solid var(--border-subtle);
+  font-size: 0.64rem;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   color: var(--cyan);
 }
 
-/* Senarai Kad Rekod Mudah Alih (Ganti jadual kaku) */
-.mobile-claims-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* Claims List */
+.claims-card {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.claim-item-row {
-  background: #080d1a;
-  border: 1px solid var(--border-ui);
+.claim-row {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  padding: 0.65rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 0.45rem;
 }
 
 .badge-status {
@@ -484,7 +512,7 @@ body {
 .badge-pending { background: rgba(245, 158, 11, 0.15); color: var(--gold); }
 .badge-done { background: rgba(0, 192, 135, 0.15); color: var(--green); }
 
-/* Modals Mobile Bottom-sheet / Popup */
+/* Modals */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -506,14 +534,12 @@ body {
 
 .modal-content {
   background: #0d1527;
-  border: 1px solid var(--border-ui);
+  border: 1px solid var(--border-subtle);
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
   padding: 1.25rem 1rem 2rem 1rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
   max-height: 85vh;
   overflow-y: auto;
 }
@@ -528,13 +554,17 @@ body {
 .input-styled {
   width: 100%;
   background: var(--bg-input);
-  border: 1px solid var(--border-ui);
+  border: 1px solid var(--border-subtle);
   color: #fff;
   padding: 0.65rem 0.75rem;
   border-radius: 8px;
   outline: none;
   font-size: 0.88rem;
   margin-top: 0.3rem;
+}
+
+.input-styled:focus {
+  border-color: var(--green);
 }
 
 .command-snippet {
@@ -557,7 +587,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
-  max-width: 400px;
+  max-width: 380px;
   background: var(--green);
   color: #000;
   padding: 0.65rem 1rem;
