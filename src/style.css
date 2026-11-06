@@ -56,7 +56,7 @@ body {
   background: #0b1120;
   border: 1px solid var(--border-ui);
   border-radius: 12px;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.2rem;
   flex-wrap: wrap;
   gap: 0.8rem;
 }
@@ -146,6 +146,26 @@ body {
   color: var(--red);
 }
 
+/* Banner Peringatan Guest */
+.guest-banner {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(0, 192, 135, 0.08));
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.guest-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 /* Stats */
 .stats-grid {
   display: grid;
@@ -165,6 +185,16 @@ body {
   font-size: 1.5rem;
   font-weight: 800;
   margin-top: 0.2rem;
+}
+
+.stat-locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--gold);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .stat-actions-row {
@@ -258,48 +288,26 @@ body {
   gap: 0.5rem;
 }
 
-/* History Ledger */
-.history-section {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  margin-top: 1.25rem;
+/* Order Desk & Locked Overlay */
+.order-desk-wrapper {
+  position: relative;
 }
 
-@media(min-width: 900px) {
-  .history-section {
-    grid-template-columns: 1.2fr 1fr;
-  }
+.desk-lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 16, 29, 0.88);
+  backdrop-filter: blur(5px);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+  z-index: 10;
 }
 
-.table-box {
-  width: 100%;
-  overflow-x: auto;
-  max-height: 240px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-  text-align: left;
-}
-
-th {
-  padding: 0.6rem 0.8rem;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border-ui);
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-}
-
-td {
-  padding: 0.55rem 0.8rem;
-  border-bottom: 1px solid var(--border-ui);
-}
-
-/* Order Desk */
 .tab-row {
   display: flex;
   gap: 0.5rem;
@@ -385,6 +393,47 @@ td {
 .btn-action-order.sell {
   background: var(--red);
   color: #fff;
+}
+
+/* History Ledger */
+.history-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+@media(min-width: 900px) {
+  .history-section {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+.table-box {
+  width: 100%;
+  overflow-x: auto;
+  max-height: 240px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+th {
+  padding: 0.6rem 0.8rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
+td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--border-ui);
 }
 
 /* Modals */
