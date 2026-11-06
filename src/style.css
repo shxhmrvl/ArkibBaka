@@ -1,8 +1,10 @@
 :root {
-  --bg-main: #080c15;
-  --bg-card: #111726;
-  --bg-input: #090e1a;
+  --bg-main: #070b14;
+  --bg-card: #0f172a;
+  --bg-card-alt: #0a0f1d;
+  --bg-input: #060913;
   --border-ui: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(0, 192, 135, 0.35);
   --green: #00c087;
   --green-glow: rgba(0, 192, 135, 0.3);
   --red: #f43f5e;
@@ -10,7 +12,6 @@
   --gold: #f59e0b;
   --cyan: #06b6d4;
   --whatsapp: #25d366;
-  --whatsapp-glow: rgba(37, 211, 102, 0.35);
   --text-primary: #f8fafc;
   --text-muted: #64748b;
 }
@@ -34,9 +35,9 @@ body {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 1.2rem 1rem 5rem 1rem;
+  padding: 1rem 1rem 5rem 1rem;
 }
 
 .card {
@@ -51,13 +52,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.4rem;
-  background: #0d1322;
+  padding: 0.9rem 1.25rem;
+  background: #0b1120;
   border: 1px solid var(--border-ui);
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .brand {
@@ -81,14 +82,14 @@ body {
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .btn-pill {
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -103,7 +104,7 @@ body {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #000;
   font-weight: 800;
-  box-shadow: 0 0 15px var(--green-glow);
+  box-shadow: 0 0 12px var(--green-glow);
 }
 
 .btn-withdraw {
@@ -116,7 +117,7 @@ body {
   background: linear-gradient(135deg, #25d366, #128c7e);
   color: #ffffff;
   font-weight: 700;
-  padding: 0.45rem 0.85rem;
+  padding: 0.45rem 0.8rem;
   border-radius: 6px;
   font-size: 0.78rem;
   text-decoration: none;
@@ -125,13 +126,6 @@ body {
   gap: 0.4rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 0 12px var(--whatsapp-glow);
-  transition: transform 0.15s;
-}
-
-.btn-whatsapp:hover {
-  transform: translateY(-2px);
-  color: #fff;
 }
 
 .btn-admin {
@@ -157,11 +151,11 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 700;
@@ -170,7 +164,7 @@ body {
 .stat-val {
   font-size: 1.5rem;
   font-weight: 800;
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
 }
 
 .stat-actions-row {
@@ -185,48 +179,37 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
-@media(min-width: 920px) {
+@media(min-width: 940px) {
   .trading-grid {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 2.15fr 1fr;
   }
 }
 
 .chart-box {
   width: 100%;
   height: 290px;
-  background: #060913;
+  background: #040711;
   border: 1px solid var(--border-ui);
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 0.8rem;
+  margin-top: 0.75rem;
   position: relative;
 }
 
-/* Chart Controls Toolbar */
 .chart-controls-toolbar {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.chart-mode-group {
+.btn-group {
   display: flex;
-  gap: 0.3rem;
-  background: #090e1a;
-  padding: 0.25rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-ui);
-}
-
-.zoom-group {
-  display: flex;
-  align-items: center;
   gap: 0.25rem;
-  background: #090e1a;
+  background: #060913;
   padding: 0.25rem;
   border-radius: 6px;
   border: 1px solid var(--border-ui);
@@ -236,7 +219,7 @@ body {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 0.3rem 0.55rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -247,21 +230,11 @@ body {
   transition: all 0.2s;
 }
 
-.btn-mode:hover:not(:disabled) {
-  color: #fff;
-}
-
-.btn-mode:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
 .btn-mode.active {
   background: var(--green);
   color: #000;
 }
 
-/* Pips Display */
 .pips-badge {
   display: inline-flex;
   align-items: center;
@@ -270,7 +243,7 @@ body {
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 800;
-  background: #090e1a;
+  background: #060913;
   border: 1px solid var(--border-ui);
 }
 
@@ -280,47 +253,66 @@ body {
   align-items: center;
   font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-/* Pips History Tape */
-.pips-history-strip {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.6rem 0.2rem 0.2rem 0.2rem;
-  margin-top: 0.6rem;
-  border-top: 1px dashed var(--border-ui);
+/* History Ledger */
+.history-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
 }
 
-.pips-pill {
-  flex-shrink: 0;
-  background: #090e1a;
-  border: 1px solid var(--border-ui);
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+@media(min-width: 900px) {
+  .history-section {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+.table-box {
+  width: 100%;
+  overflow-x: auto;
+  max-height: 240px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+th {
+  padding: 0.6rem 0.8rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-ui);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+}
+
+td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--border-ui);
 }
 
 /* Order Desk */
 .tab-row {
   display: flex;
   gap: 0.5rem;
-  background: #090e1a;
+  background: #060913;
   padding: 0.35rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
 }
 
 .tab-btn {
   flex: 1;
   border: none;
-  padding: 0.65rem;
+  padding: 0.6rem;
   border-radius: 6px;
   font-weight: 700;
   cursor: pointer;
@@ -338,27 +330,51 @@ body {
   color: #fff;
 }
 
+.leverage-selector {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.8rem 0;
+}
+
+.btn-lev {
+  flex: 1;
+  background: #060913;
+  border: 1px solid var(--border-ui);
+  color: var(--text-muted);
+  padding: 0.35rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.btn-lev.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .input-styled {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border-ui);
   color: #fff;
-  padding: 0.8rem 1rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 8px;
   outline: none;
-  font-size: 1rem;
-  margin-top: 0.35rem;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
 }
 
 .btn-action-order {
   width: 100%;
   border: none;
-  padding: 0.9rem;
+  padding: 0.85rem;
   border-radius: 8px;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   cursor: pointer;
-  margin-top: 1rem;
+  margin-top: 0.8rem;
 }
 
 .btn-action-order.buy {
@@ -385,10 +401,10 @@ body {
 }
 
 .modal-content {
-  background: #111726;
+  background: #101726;
   border: 1px solid var(--border-ui);
   border-radius: 14px;
-  padding: 1.8rem;
+  padding: 1.6rem;
   width: 100%;
   max-width: 580px;
   max-height: 90vh;
@@ -403,7 +419,7 @@ body {
 
 .auth-tab-btn {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0.65rem;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -430,19 +446,19 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #090e1a;
+  background: #070b14;
   padding: 0.6rem 0.8rem;
   border-radius: 8px;
   border: 1px solid var(--border-ui);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .command-snippet {
   background: #040711;
-  border: 1px solid rgba(6, 182, 212, 0.2);
+  border: 1px solid rgba(6, 182, 212, 0.25);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--cyan);
   display: flex;
   justify-content: space-between;
@@ -453,7 +469,7 @@ body {
 .badge-status {
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -478,7 +494,7 @@ body {
   right: 2rem;
   background: var(--green);
   color: #000;
-  padding: 0.8rem 1.4rem;
+  padding: 0.75rem 1.4rem;
   border-radius: 10px;
   font-weight: 800;
   box-shadow: 0 0 20px var(--green-glow);
