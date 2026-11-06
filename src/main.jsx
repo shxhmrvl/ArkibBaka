@@ -5,7 +5,8 @@ import {
   Server, Shield, Zap, Gift, User, LogIn, LogOut, UserPlus, 
   Copy, PlusCircle, Ticket, MessageCircle, Lock, Unlock, 
   Clock, CheckCircle2, X, Coins, Crown, Package, Key, 
-  ThumbsUp, CalendarCheck, Star, AlertCircle, Radio, Tag, HelpCircle
+  ThumbsUp, CalendarCheck, Star, AlertCircle, Radio, Tag, 
+  HelpCircle, Check, Search
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -119,6 +120,7 @@ function App() {
   const [serverOnline, setServerOnline] = useState(true);
   const [playerCount, setPlayerCount] = useState({ online: 8, max: 30 });
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState("login");
@@ -139,7 +141,7 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // Semak status pelayan Minecraft Bedrock secara masa nyata
+  // Semak status pelayan Minecraft Bedrock secara langsung
   useEffect(() => {
     fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_IP}:${SERVER_PORT}`)
       .then((res) => res.json())
@@ -288,9 +290,13 @@ function App() {
   const isVotedToday = currentUser?.lastVote === todayStr;
   const isDailyClaimed = currentUser?.lastDaily === todayStr;
 
-  const filteredItems = activeCategory === "Semua" 
-    ? STORE_ITEMS 
-    : STORE_ITEMS.filter((i) => i.category === activeCategory);
+  // Penapisan Kategori & Carian
+  const filteredItems = STORE_ITEMS.filter((item) => {
+    const matchesCat = activeCategory === "Semua" || item.category === activeCategory;
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
 
   return (
     <div>
@@ -344,7 +350,7 @@ function App() {
           </div>
         </nav>
 
-        {/* 3. Hero Section Gaya FallXD Store */}
+        {/* 3. Hero Section */}
         <section className="hero-section">
           <div className="verified-badge mono">
             <CheckCircle2 size={13} /> Verified Game Store • BakaCrew Bedrock Malaysia
@@ -511,16 +517,28 @@ function App() {
               </p>
             </div>
 
-            <div className="category-scroll mono">
-              {["Semua", "Ranks", "Kits", "Scoreboard", "Crates"].map((cat) => (
-                <button 
-                  key={cat} 
-                  className={`btn-filter ${activeCategory === cat ? "active" : ""}`}
-                  onClick={() => setActiveCategory(cat)}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
+              <div className="search-box">
+                <Search size={14} color="var(--text-muted)" />
+                <input 
+                  type="text" 
+                  placeholder="Cari item atau pangkat..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="category-scroll mono">
+                {["Semua", "Ranks", "Kits", "Scoreboard", "Crates"].map((cat) => (
+                  <button 
+                    key={cat} 
+                    className={`btn-filter ${activeCategory === cat ? "active" : ""}`}
+                    onClick={() => setActiveCategory(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -576,7 +594,7 @@ function App() {
           </div>
         </section>
 
-        {/* 5. FAQ Section Ala FallXD Store */}
+        {/* 5. FAQ Section */}
         <section className="faq-section">
           <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
             <HelpCircle size={18} color="var(--cyan)" />
@@ -656,6 +674,20 @@ function App() {
               </div>
 
               <form onSubmit={handleConfirmBuy}>
+                {/* Pratonton Avatar Kepala Skin Minecraft */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "var(--bg-deep)", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid var(--border-ui)", marginBottom: "0.75rem" }}>
+                  <img 
+                    src={`https://mc-heads.net/avatar/${(claimIgn || "Steve").trim()}/40`} 
+                    alt="Skin Head" 
+                    style={{ width: 36, height: 36, borderRadius: 6, border: "1px solid var(--border-ui)" }}
+                    onError={(e) => { e.currentTarget.src = "https://mc-heads.net/avatar/Steve/40"; }}
+                  />
+                  <div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Akaun Penerima:</div>
+                    <strong className="mono" style={{ fontSize: "0.85rem", color: "var(--cyan)" }}>{claimIgn.trim() || "Steve"}</strong>
+                  </div>
+                </div>
+
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label className="mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>MINECRAFT BEDROCK GAMERTAG / IGN</label>
                   <input 
@@ -769,7 +801,7 @@ function App() {
                 <h3 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--green)" }}><Ticket size={16} /> Tebus PIN Tambah Nilai</h3>
                 <button onClick={() => setShowRedeem(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={16} /></button>
               </div>
-              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono" style={{ width: "100%", justifyContent: "center", padding: "0.55rem", marginBottom: "0.85rem" }}>
+              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-green-gradient mono" style={{ width: "100%", justifyContent: "center", padding: "0.55rem", marginBottom: "0.85rem" }}>
                 <MessageCircle size={13} /> Beli PIN di WhatsApp (018-3915460)
               </a>
               <form onSubmit={handleRedeemPin}>
