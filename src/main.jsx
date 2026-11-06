@@ -3,9 +3,9 @@ import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
   Server, Shield, Zap, Gift, User, LogIn, LogOut, UserPlus, 
-  Copy, Check, PlusCircle, Ticket, MessageCircle, Lock, Unlock, 
-  Clock, CheckCircle2, ChevronRight, X, Sparkles, Coins, Crown, 
-  Package, Key, ExternalLink 
+  Copy, PlusCircle, Ticket, MessageCircle, Lock, Unlock, 
+  Clock, CheckCircle2, X, Sparkles, Coins, Crown, 
+  Package, Key, ThumbsUp 
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -14,8 +14,10 @@ const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent
 
 const SERVER_IP = "baka.skyes.me";
 const SERVER_PORT = "19205";
+// Pautan portal undian Bedrock pelayan
+const BEDROCK_VOTE_URL = "https://minecraftpocket-servers.com/";
 
-// Storan selamat
+// Storan selamat LocalStorage
 const load = (k, def) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } };
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
@@ -166,7 +168,8 @@ function App() {
         gamerTag: ign || u, 
         balanceRM: 0, 
         lastDaily: null, 
-        streak: 0 
+        streak: 0,
+        lastVote: null 
       };
       const updated = [...usersDb, newUser];
       setUsersDb(updated);
@@ -186,16 +189,16 @@ function App() {
     setAuthForm({ user: "", pass: "", ign: "", err: "" });
   };
 
-  // Tuntutan Ganjaran Harian (Daily Streak)
+  // Ganjaran Log Masuk Harian (Daily Streak)
   const handleDailyClaim = () => {
     if (!currentUser) return setShowAuth(true);
     const today = new Date().toDateString();
     if (currentUser.lastDaily === today) {
-      return showToast("⚠️ Anda sudah tuntut ganjaran hari ini. Datang lagi esok!");
+      return showToast("⚠️ Anda sudah tuntut hadiah hari ini. Datang lagi esok!");
     }
 
     const newStreak = (currentUser.streak || 0) + 1;
-    const rewardBonus = newStreak % 7 === 0 ? 2.0 : 0.50; // Hari ke-7 dapat bonus RM2
+    const rewardBonus = newStreak % 7 === 0 ? 2.0 : 0.50;
 
     updateUser({
       balanceRM: +(currentUser.balanceRM + rewardBonus).toFixed(2),
@@ -203,7 +206,28 @@ function App() {
       streak: newStreak
     });
 
-    showToast(`🎁 Tahniah! +RM ${rewardBonus.toFixed(2)} dimasukkan (Streak Hari ke-${newStreak})!`);
+    showToast(`🎁 Hadiah harian dituntut! +RM ${rewardBonus.toFixed(2)} (Streak Hari ke-${newStreak})!`);
+  };
+
+  // SISTEM BEDROCK VOTE (+RM 0.25 SEHARI SEKALI)
+  const handleBedrockVote = () => {
+    if (!currentUser) return setShowAuth(true);
+    const today = new Date().toDateString();
+
+    if (currentUser.lastVote === today) {
+      return showToast("⚠️ Anda telah membuat undian hari ini. Sila undi lagi esok!");
+    }
+
+    // Buka laman undian Bedrock di tab baharu
+    window.open(BEDROCK_VOTE_URL, "_blank");
+
+    // Kreditkan bonus RM 0.25 ke dompet
+    updateUser({
+      balanceRM: +(currentUser.balanceRM + 0.25).toFixed(2),
+      lastVote: today
+    });
+
+    showToast("🎉 Terima kasih mengundi BakaCrew! +RM 0.25 telah dikreditkan ke akaun anda!");
   };
 
   // Tebus PIN RM5
@@ -225,7 +249,7 @@ function App() {
     showToast(`🎉 +RM ${target.value}.00 berjaya dimasukkan ke baki dompet!`);
   };
 
-  // Beli & Tebus Hadiah Server
+  // Beli Hadiah
   const handleConfirmBuy = (e) => {
     e.preventDefault();
     if (!currentUser) return setShowAuth(true);
@@ -236,10 +260,8 @@ function App() {
       return showToast("Baki dompet RM tidak mencukupi! Sila beli PIN di WhatsApp Admin.");
     }
 
-    // Tolak baki dompet
     updateUser({ balanceRM: +(currentUser.balanceRM - buyItemModal.price).toFixed(2) });
 
-    // Cipta tiket tebusan
     const newClaim = {
       id: Date.now(),
       username: currentUser.username,
@@ -260,13 +282,16 @@ function App() {
     showToast(`✅ Pembelian berjaya! Permintaan tebusan item ${buyItemModal.name} dihantar ke Admin.`);
   };
 
-  // Admin selesaikan claim
   const handleApproveClaim = (id) => {
     const updated = claimsList.map((c) => c.id === id ? { ...c, status: "SELESAI" } : c);
     setClaimsList(updated);
     save("bc_claims", updated);
     showToast("Penebusan ditandakan sebagai SELESAI!");
   };
+
+  const todayStr = new Date().toDateString();
+  const isVotedToday = currentUser?.lastVote === todayStr;
+  const isDailyClaimed = currentUser?.lastDaily === todayStr;
 
   const filteredItems = activeCategory === "Semua" 
     ? STORE_ITEMS 
@@ -341,8 +366,9 @@ function App() {
         </div>
       </div>
 
-      {/* Grid Profil Dompet & Ganjaran Harian */}
+      {/* Grid 3 Petak: Dompet, Daily Check-In & Bedrock Vote */}
       <div className="dash-grid">
+        {/* Petak Dompet */}
         <div className="card">
           <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Baki Dompet Simpanan</span>
           <div className="val-big mono" style={{ color: "var(--green)" }}>
@@ -361,14 +387,14 @@ function App() {
           </div>
         </div>
 
-        {/* Daily Streak Card */}
+        {/* Petak Daily Streak */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--gold)", fontWeight: 700 }}>🎁 DAILY CHECK-IN STREAK</span>
-            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Streak: {currentUser ? currentUser.streak || 0 : 0} Hari</span>
+            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--gold)", fontWeight: 700 }}>🎁 DAILY CHECK-IN</span>
+            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Streak: {currentUser?.streak || 0} Hari</span>
           </div>
-          <div className="val-big" style={{ fontSize: "1.2rem", marginTop: "0.4rem" }}>
-            Tuntut Ganjaran Percuma Setiap Hari
+          <div className="val-big" style={{ fontSize: "1.15rem", marginTop: "0.3rem" }}>
+            Ganjaran Harian (+RM0.50)
           </div>
           <div className="streak-row mono">
             {[1, 2, 3, 4, 5, 6, 7].map((day) => (
@@ -379,10 +405,45 @@ function App() {
           </div>
           <button 
             className="btn-buy-item mono" 
-            style={{ marginTop: "0.8rem", background: "linear-gradient(135deg, var(--gold), #d97706)", color: "#000" }}
+            style={{ 
+              marginTop: "0.8rem", 
+              background: isDailyClaimed ? "#1e293b" : "linear-gradient(135deg, var(--gold), #d97706)", 
+              color: isDailyClaimed ? "var(--text-muted)" : "#000",
+              cursor: isDailyClaimed ? "not-allowed" : "pointer"
+            }}
             onClick={handleDailyClaim}
+            disabled={isDailyClaimed}
           >
-            <Sparkles size={14} /> Tuntut Hadiah Hari Ini (+RM0.50)
+            <Sparkles size={14} /> {isDailyClaimed ? "✓ Dituntut Hari Ini" : "Tuntut Ganjaran Hari Ini"}
+          </button>
+        </div>
+
+        {/* PETAK BEDROCK VOTE BONUS (+RM 0.25) */}
+        <div className="card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--cyan)", fontWeight: 700 }}>🗳️ BEDROCK VOTE BONUS</span>
+            <span className="mono" style={{ fontSize: "0.72rem", color: isVotedToday ? "var(--green)" : "var(--gold)" }}>
+              {isVotedToday ? "✓ SELESAI HARI INI" : "★ SEDIA DIUNDI"}
+            </span>
+          </div>
+          <div className="val-big" style={{ fontSize: "1.15rem", marginTop: "0.3rem" }}>
+            Undi Server BakaCrew (+RM0.25)
+          </div>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.3rem", lineHeight: 1.4 }}>
+            Undi di portal server Bedrock setiap hari untuk menyokong pelayan & kumpul kredit percuma!
+          </p>
+          <button 
+            className="btn-buy-item mono" 
+            style={{ 
+              marginTop: "0.8rem", 
+              background: isVotedToday ? "#1e293b" : "linear-gradient(135deg, var(--cyan), #0284c7)", 
+              color: isVotedToday ? "var(--text-muted)" : "#fff",
+              cursor: isVotedToday ? "not-allowed" : "pointer"
+            }}
+            onClick={handleBedrockVote}
+            disabled={isVotedToday}
+          >
+            <ThumbsUp size={14} /> {isVotedToday ? "✓ Sudah Diundi Hari Ini" : "Buka Vote & Tuntut (+RM0.25)"}
           </button>
         </div>
       </div>
@@ -412,7 +473,7 @@ function App() {
           </div>
         </div>
 
-        {/* Senarai Kad Item Kedai */}
+        {/* Grid Kad Item */}
         <div className="store-grid">
           {filteredItems.map((item) => (
             <div key={item.id} className="item-card">
@@ -455,7 +516,7 @@ function App() {
         </div>
       </div>
 
-      {/* Sejarah Penebusan Pemain */}
+      {/* Rekod Penebusan Pemain */}
       <div className="card" style={{ marginBottom: "2rem" }}>
         <h4 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.8rem" }}>
           <Clock size={16} color="var(--cyan)" /> Rekod Penebusan Hadiah Anda
@@ -488,7 +549,7 @@ function App() {
         </div>
       </div>
 
-      {/* Modal Beli & Sahkan Tebus Hadiah */}
+      {/* Modal Sahkan Tebus Hadiah */}
       {buyItemModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -581,95 +642,4 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--green)" }}><Ticket size={20} /> Tebus PIN Top-up RM 5.00</h3>
-              <button onClick={() => setShowRedeem(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
-            </div>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono" style={{ width: "100%", justifyContent: "center", padding: "0.7rem", marginBottom: "1.2rem" }}>
-              <MessageCircle size={16} /> Beli PIN di WhatsApp Admin (018-3915460)
-            </a>
-            <form onSubmit={handleRedeemPin}>
-              <label className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>MASUKKAN KOD PIN (BK5-XXXX-XXXX)</label>
-              <input type="text" className="input-styled mono" style={{ textAlign: "center", fontSize: "1.2rem", letterSpacing: "2px", textTransform: "uppercase" }} placeholder="BK5-0000-0000" value={inputPin} onChange={(e) => setInputPin(e.target.value)} required />
-              <button type="submit" className="btn-buy-item mono" style={{ marginTop: "1rem" }}>Tebus Sekarang (+RM 5.00)</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Admin Dashboard (PIN 200200) */}
-      {showAdmin && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ borderColor: "var(--gold)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--gold)" }}><Shield size={20} /> Admin Hub (PIN: 200200)</h3>
-              <button onClick={() => setShowAdmin(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
-            </div>
-
-            {!isAdmin ? (
-              <form onSubmit={(e) => { e.preventDefault(); if (adminPin === ADMIN_PIN) { setIsAdmin(true); setAdminPin(""); } else showToast("PIN Salah!"); }}>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.8rem" }}>Masukkan kod PIN Pentadbir:</p>
-                <input type="password" maxLength={6} className="input-styled mono" style={{ textAlign: "center", fontSize: "1.4rem", letterSpacing: "6px" }} placeholder="••••••" value={adminPin} onChange={(e) => setAdminPin(e.target.value)} autoFocus />
-                <button type="submit" className="btn-buy-item mono" style={{ background: "var(--gold)", color: "#000", marginTop: "1rem" }}>Buka Kunci Admin</button>
-              </form>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-                {/* Senarai Permintaan Tebusan Hadiah */}
-                <div style={{ background: "#060913", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
-                  <h4 style={{ fontSize: "0.95rem", color: "var(--cyan)", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
-                    <Gift size={16} /> Permintaan Tebusan Hadiah Pelayan ({claimsList.length})
-                  </h4>
-                  <div className="table-box" style={{ maxHeight: "200px" }}>
-                    {claimsList.length === 0 ? <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", textAlign: "center", padding: "1rem" }}>Tiada sebarang tebusan hadiah.</p> : claimsList.map((req) => (
-                      <div key={req.id} style={{ background: "#0b1120", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "8px", marginBottom: "0.5rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <strong style={{ color: "#fff" }}>IGN: {req.gamerTag} ({req.itemName})</strong>
-                          <span className={`badge-status ${req.status === "PENDING" ? "badge-pending" : "badge-done"}`}>{req.status}</span>
-                        </div>
-                        <div className="command-snippet mono">
-                          <span>{req.command}</span>
-                          <button onClick={() => { navigator.clipboard.writeText(req.command); showToast("Command Bedrock Disalin!"); }} style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer" }}>Salin</button>
-                        </div>
-                        {req.status === "PENDING" && (
-                          <button onClick={() => handleApproveClaim(req.id)} className="btn-pill btn-redeem mono" style={{ marginTop: "0.5rem", width: "100%", justifyContent: "center", fontSize: "0.75rem" }}>
-                            <CheckCircle2 size={13} /> Tandakan Item Telah Diberi Dalam Game
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Penjana PIN RM5 */}
-                <div style={{ background: "#060913", padding: "1rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                    <h4 style={{ fontSize: "0.95rem", color: "var(--green)" }}>Jana PIN Top-up RM 5</h4>
-                    <button onClick={() => { const code = genPin(); const up = [{ code, value: 5, status: "AVAILABLE" }, ...pinDb]; setPinDb(up); save("bc_pins", up); showToast(`PIN: ${code}`); }} className="btn-pill btn-redeem mono" style={{ fontSize: "0.75rem" }}>
-                      <PlusCircle size={13} /> + Jana 1x PIN
-                    </button>
-                  </div>
-                  <div className="table-box" style={{ maxHeight: "150px" }}>
-                    {pinDb.map((pin, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", borderBottom: "1px solid var(--border-ui)", fontSize: "0.82rem" }} className="mono">
-                        <span><strong>{pin.code}</strong> (RM {pin.value})</span>
-                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                          <span className={`badge-status ${pin.status === "AVAILABLE" ? "badge-done" : "badge-pending"}`}>{pin.status === "AVAILABLE" ? "BELUM DIPAKAI" : "DITEBUS"}</span>
-                          {pin.status === "AVAILABLE" && <button onClick={() => { navigator.clipboard.writeText(pin.code); showToast("PIN disalin!"); }} style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer" }}><Copy size={13} /></button>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+              <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "va
