@@ -6,7 +6,7 @@ import {
   ArrowUpRight, ArrowDownRight, ShieldAlert, X, 
   Copy, Check, PlusCircle, Ticket, BarChart3, LineChart, 
   MessageCircle, ArrowDownToLine, Terminal, CheckCircle2,
-  Clock, History, Flame, SlidersHorizontal
+  Clock, History, Flame, AlertCircle, Sparkles
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -40,13 +40,12 @@ function App() {
   // Pangkalan Data Pengguna
   const [usersDb, setUsersDb] = useState(() => {
     const saved = localStorage.getItem("baka_users_db");
-    return saved ? JSON.parse(saved) : [
-      { username: "trader_demo", password: "123", fiatBalance: 15.00, bakaBalance: 5.0, trades: [] }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
+  // Pengguna Aktif (Null jika belum login)
   const [currentUsername, setCurrentUsername] = useState(() => {
-    return localStorage.getItem("baka_active_user") || "trader_demo";
+    return localStorage.getItem("baka_active_user") || "";
   });
 
   const currentUser = usersDb.find((u) => u.username === currentUsername) || null;
@@ -60,7 +59,7 @@ function App() {
   const [priceHistory, setPriceHistory] = useState([2.30, 2.38, 2.45, 2.42, 2.50]);
   const [marketBias, setMarketBias] = useState("neutral");
 
-  // SEJARAH PIPS & LEVERAGE (1 Pip = 0.0001)
+  // Sejarah Pips & Leverage
   const [leverage, setLeverage] = useState(1);
   const [pipsHistory, setPipsHistory] = useState([
     { id: 1, pips: "+12.0", type: "TICK", oldPrice: 2.4880, newPrice: 2.5000, isPositive: true, time: "11:05:12" },
@@ -80,14 +79,14 @@ function App() {
     ];
   });
 
-  // Sistem Withdraw Scoreboard
+  // Withdraw Requests
   const [withdrawRequests, setWithdrawRequests] = useState(() => {
     const saved = localStorage.getItem("baka_withdraw_requests");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Modals & UI
-  const [showAuthModal, setShowAuthModal] = useState(!currentUser);
+  // Modals & UI States
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [authTab, setAuthTab] = useState("login");
   const [authUsername, setAuthUsername] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -130,7 +129,7 @@ function App() {
     localStorage.setItem("baka_withdraw_requests", JSON.stringify(withdrawRequests));
   }, [withdrawRequests]);
 
-  // Gelung Pasaran Masa Nyata & Pips Logger
+  // Pasaran Berterusan
   useEffect(() => {
     let tickCounter = 0;
 
@@ -144,7 +143,6 @@ function App() {
         const next = Math.max(0.01, +(current * (1 + change)).toFixed(4));
         setPriceHistory((h) => [...h.slice(-30), next]);
 
-        // Rekod pergerakan Pips
         const deltaPipsVal = +((next - current) * 10000).toFixed(1);
         if (deltaPipsVal !== 0) {
           const newPipRecord = {
@@ -159,7 +157,6 @@ function App() {
           setPipsHistory((prev) => [newPipRecord, ...prev.slice(0, 14)]);
         }
 
-        // Kemas kini Candlestick
         setCandles((prevCandles) => {
           tickCounter++;
           const lastCandle = prevCandles[prevCandles.length - 1];
@@ -193,6 +190,7 @@ function App() {
     return () => clearInterval(interval);
   }, [marketBias]);
 
+  // Auth Handlers
   const handleRegister = (e) => {
     e.preventDefault();
     setAuthError("");
@@ -221,7 +219,7 @@ function App() {
     setShowAuthModal(false);
     setAuthUsername("");
     setAuthPassword("");
-    showToast(`🎉 Selamat datang, ${cleanUser}!`);
+    showToast(`🎉 Selamat datang, ${cleanUser}! Akaun anda sedia digunakan.`);
   };
 
   const handleLogin = (e) => {
@@ -234,7 +232,7 @@ function App() {
     );
 
     if (!existingUser) {
-      setAuthError("Username atau Password salah!");
+      setAuthError("Username atau Password salah! Belum ada akaun? Sila daftar akaun.");
       return;
     }
 
@@ -247,9 +245,17 @@ function App() {
 
   const handleLogout = () => {
     setCurrentUsername("");
-    setShowAuthModal(true);
-    setAuthTab("login");
-    showToast("Anda telah log keluar.");
+    showToast("Anda telah log keluar. Sekarang dalam Mod Tetamu.");
+  };
+
+  // Helper untuk buka modal auth jika guest
+  const requireAuth = (callback) => {
+    if (!currentUser) {
+      setShowAuthModal(true);
+      setAuthError("Sila log masuk atau daftar akaun untuk meneruskan!");
+      return;
+    }
+    callback();
   };
 
   const updateCurrentUserData = (updatedFields) => {
@@ -261,153 +267,144 @@ function App() {
 
   const handleExecuteTrade = (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
+    requireAuth(() => {
+      const qty = parseFloat(tradeAmount);
+      if (!qty || qty <= 0) return;
 
-    const qty = parseFloat(tradeAmount);
-    if (!qty || qty <= 0) return;
+      if (orderType === "buy") {
+        const baseCost = +(qty * price).toFixed(2);
+        const marginCost = +(baseCost / leverage).toFixed(2);
 
-    if (orderType === "buy") {
-      const baseCost = +(qty * price).toFixed(2);
-      const marginCost = +(baseCost / leverage).toFixed(2);
+        if (currentUser.fiatBalance < marginCost) {
+          showToast("Baki RM tidak mencukupi! Sila beli PIN di WhatsApp Admin.");
+          return;
+        }
 
-      if (currentUser.fiatBalance < marginCost) {
-        showToast("Baki RM tidak mencukupi! Sila beli PIN di WhatsApp Admin.");
-        return;
+        const newFiat = +(currentUser.fiatBalance - marginCost).toFixed(2);
+        const newBaka = +(currentUser.bakaBalance + qty * leverage).toFixed(4);
+        const newTrade = { 
+          id: Date.now(), 
+          type: `BUY (${leverage}x)`, 
+          qty: qty * leverage, 
+          price, 
+          total: marginCost, 
+          time: new Date().toLocaleTimeString() 
+        };
+
+        updateCurrentUserData({
+          fiatBalance: newFiat,
+          bakaBalance: newBaka,
+          trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
+        });
+
+        showToast(`Berjaya Beli ${qty * leverage} $BAKA (Margin: RM ${marginCost})`);
+      } else {
+        if (currentUser.bakaBalance < qty) {
+          showToast("Baki $BAKA tidak mencukupi!");
+          return;
+        }
+
+        const totalGain = +(qty * price).toFixed(2);
+        const newBaka = +(currentUser.bakaBalance - qty).toFixed(4);
+        const newFiat = +(currentUser.fiatBalance + totalGain).toFixed(2);
+        const newTrade = { 
+          id: Date.now(), 
+          type: `SELL (${leverage}x)`, 
+          qty, 
+          price, 
+          total: totalGain, 
+          time: new Date().toLocaleTimeString() 
+        };
+
+        updateCurrentUserData({
+          fiatBalance: newFiat,
+          bakaBalance: newBaka,
+          trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
+        });
+
+        showToast(`Berjaya Jual ${qty} $BAKA (+RM ${totalGain})`);
       }
-
-      const newFiat = +(currentUser.fiatBalance - marginCost).toFixed(2);
-      const newBaka = +(currentUser.bakaBalance + qty * leverage).toFixed(4);
-      const newTrade = { 
-        id: Date.now(), 
-        type: `BUY (${leverage}x)`, 
-        qty: qty * leverage, 
-        price, 
-        total: marginCost, 
-        time: new Date().toLocaleTimeString() 
-      };
-
-      updateCurrentUserData({
-        fiatBalance: newFiat,
-        bakaBalance: newBaka,
-        trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
-      });
-
-      showToast(`Berjaya Beli ${qty * leverage} $BAKA (Margin: RM ${marginCost})`);
-    } else {
-      if (currentUser.bakaBalance < qty) {
-        showToast("Baki $BAKA tidak mencukupi!");
-        return;
-      }
-
-      const totalGain = +(qty * price).toFixed(2);
-      const newBaka = +(currentUser.bakaBalance - qty).toFixed(4);
-      const newFiat = +(currentUser.fiatBalance + totalGain).toFixed(2);
-      const newTrade = { 
-        id: Date.now(), 
-        type: `SELL (${leverage}x)`, 
-        qty, 
-        price, 
-        total: totalGain, 
-        time: new Date().toLocaleTimeString() 
-      };
-
-      updateCurrentUserData({
-        fiatBalance: newFiat,
-        bakaBalance: newBaka,
-        trades: [newTrade, ...(currentUser.trades || []).slice(0, 15)]
-      });
-
-      showToast(`Berjaya Jual ${qty} $BAKA (+RM ${totalGain})`);
-    }
-    setTradeAmount("");
+      setTradeAmount("");
+    });
   };
 
   const handleRedeemPin = (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
+    requireAuth(() => {
+      const cleanCode = inputPinCode.trim().toUpperCase();
+      const targetPin = pinDatabase.find((p) => p.code.toUpperCase() === cleanCode);
 
-    const cleanCode = inputPinCode.trim().toUpperCase();
-    const targetPin = pinDatabase.find((p) => p.code.toUpperCase() === cleanCode);
+      if (!targetPin) {
+        showToast("❌ Kod PIN tidak wujud!");
+        return;
+      }
 
-    if (!targetPin) {
-      showToast("❌ Kod PIN tidak wujud!");
-      return;
-    }
+      if (targetPin.status === "USED") {
+        showToast(`❌ PIN telah ditebus oleh ${targetPin.usedBy || "pengguna lain"}!`);
+        return;
+      }
 
-    if (targetPin.status === "USED") {
-      showToast(`❌ PIN telah ditebus oleh ${targetPin.usedBy || "pengguna lain"}!`);
-      return;
-    }
+      updateCurrentUserData({
+        fiatBalance: +(currentUser.fiatBalance + targetPin.value).toFixed(2)
+      });
 
-    updateCurrentUserData({
-      fiatBalance: +(currentUser.fiatBalance + targetPin.value).toFixed(2)
+      setPinDatabase((prev) =>
+        prev.map((p) =>
+          p.code.toUpperCase() === cleanCode
+            ? { ...p, status: "USED", usedBy: currentUser.username, usedAt: new Date().toLocaleTimeString() }
+            : p
+        )
+      );
+
+      setInputPinCode("");
+      setShowRedeemModal(false);
+      showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
     });
-
-    setPinDatabase((prev) =>
-      prev.map((p) =>
-        p.code.toUpperCase() === cleanCode
-          ? { ...p, status: "USED", usedBy: currentUser.username, usedAt: new Date().toLocaleTimeString() }
-          : p
-      )
-    );
-
-    setInputPinCode("");
-    setShowRedeemModal(false);
-    showToast(`🎉 Tahniah! +RM ${targetPin.value}.00 berjaya dimasukkan!`);
   };
 
   const handleWithdrawToServer = (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      setShowAuthModal(true);
-      return;
-    }
+    requireAuth(() => {
+      const amt = parseFloat(withdrawAmountRM);
+      const ign = withdrawGamerTag.trim();
 
-    const amt = parseFloat(withdrawAmountRM);
-    const ign = withdrawGamerTag.trim();
+      if (!ign) {
+        showToast("Sila masukkan GamerTag Minecraft anda!");
+        return;
+      }
 
-    if (!ign) {
-      showToast("Sila masukkan GamerTag Minecraft anda!");
-      return;
-    }
+      if (!amt || amt <= 0) {
+        showToast("Sila masukkan jumlah RM yang sah.");
+        return;
+      }
 
-    if (!amt || amt <= 0) {
-      showToast("Sila masukkan jumlah RM yang sah.");
-      return;
-    }
+      if (currentUser.fiatBalance < amt) {
+        showToast("Baki modal RM anda tidak mencukupi!");
+        return;
+      }
 
-    if (currentUser.fiatBalance < amt) {
-      showToast("Baki modal RM anda tidak mencukupi!");
-      return;
-    }
+      const scoreboardEarned = Math.floor(amt * RATE_RM_TO_SCOREBOARD);
 
-    const scoreboardEarned = Math.floor(amt * RATE_RM_TO_SCOREBOARD);
+      updateCurrentUserData({
+        fiatBalance: +(currentUser.fiatBalance - amt).toFixed(2)
+      });
 
-    updateCurrentUserData({
-      fiatBalance: +(currentUser.fiatBalance - amt).toFixed(2)
+      const newRequest = {
+        id: Date.now(),
+        username: currentUser.username,
+        gamerTag: ign,
+        amountRM: amt,
+        scoreboardMoney: scoreboardEarned,
+        command: `/scoreboard players add ${ign} money ${scoreboardEarned}`,
+        status: "PENDING",
+        time: new Date().toLocaleTimeString()
+      };
+
+      setWithdrawRequests([newRequest, ...withdrawRequests]);
+      setShowWithdrawModal(false);
+      setWithdrawGamerTag("");
+      showToast(`✅ Permintaan Withdraw RM ${amt.toFixed(2)} ($${scoreboardEarned.toLocaleString()} Money) dihantar!`);
     });
-
-    const newRequest = {
-      id: Date.now(),
-      username: currentUser.username,
-      gamerTag: ign,
-      amountRM: amt,
-      scoreboardMoney: scoreboardEarned,
-      command: `/scoreboard players add ${ign} money ${scoreboardEarned}`,
-      status: "PENDING",
-      time: new Date().toLocaleTimeString()
-    };
-
-    setWithdrawRequests([newRequest, ...withdrawRequests]);
-    setShowWithdrawModal(false);
-    setWithdrawGamerTag("");
-    showToast(`✅ Permintaan Withdraw RM ${amt.toFixed(2)} ($${scoreboardEarned.toLocaleString()} Money) dihantar!`);
   };
 
   const handleApproveWithdraw = (id) => {
@@ -453,7 +450,6 @@ function App() {
       const next = +(curr * (1 + pct / 100)).toFixed(4);
       setPriceHistory((h) => [...h.slice(-30), next]);
 
-      // Catat ke Sejarah Pips
       const pipsAdded = +((next - curr) * 10000).toFixed(1);
       setPipsHistory((prev) => [
         { id: Date.now(), pips: `+${pipsAdded}`, type: "ADMIN PUMP", oldPrice: curr, newPrice: next, isPositive: true, time: new Date().toLocaleTimeString() },
@@ -475,7 +471,6 @@ function App() {
       const next = Math.max(0.01, +(curr * (1 - pct / 100)).toFixed(4));
       setPriceHistory((h) => [...h.slice(-30), next]);
 
-      // Catat ke Sejarah Pips
       const pipsLost = +((next - curr) * 10000).toFixed(1);
       setPipsHistory((prev) => [
         { id: Date.now(), pips: `${pipsLost}`, type: "ADMIN DUMP", oldPrice: curr, newPrice: next, isPositive: false, time: new Date().toLocaleTimeString() },
@@ -492,7 +487,7 @@ function App() {
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // PENGIRAAN SKALA & GRID GRAF
+  // Skala Chart
   const allCandleHighs = candles.map((c) => c.high);
   const allCandleLows = candles.map((c) => c.low);
   const minCandle = Math.min(...allCandleLows) * 0.992;
@@ -533,7 +528,7 @@ function App() {
           <div>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800 }}>BakaTrader Pro</h2>
             <p className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-              Sistem Dagangan, Pips History & Minecraft Scoreboard
+              {currentUser ? `Akaun: ${currentUser.username}` : "Mod Tetamu (Guest)"}
             </p>
           </div>
         </div>
@@ -558,9 +553,20 @@ function App() {
               </button>
             </>
           ) : (
-            <button className="btn-pill btn-user mono" onClick={() => setShowAuthModal(true)}>
-              <LogIn size={15} /> Log Masuk / Daftar
-            </button>
+            <>
+              <button 
+                className="btn-pill btn-user mono" 
+                onClick={() => { setAuthTab("login"); setShowAuthModal(true); }}
+              >
+                <LogIn size={15} /> Log Masuk
+              </button>
+              <button 
+                className="btn-pill btn-redeem mono" 
+                onClick={() => { setAuthTab("register"); setShowAuthModal(true); }}
+              >
+                <UserPlus size={15} /> Daftar Akaun
+              </button>
+            </>
           )}
 
           <button className="btn-pill btn-admin mono" onClick={() => setShowAdmin(true)}>
@@ -569,19 +575,54 @@ function App() {
         </div>
       </header>
 
+      {/* PERINGATAN LOG MASUK / DAFTAR BAGI GUEST */}
+      {!currentUser && (
+        <div className="guest-banner">
+          <div className="guest-banner-left">
+            <AlertCircle size={24} color="var(--cyan)" />
+            <div>
+              <h4 style={{ fontSize: "0.95rem", fontWeight: 800 }}>Anda Sedang Dalam Mod Tetamu</h4>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                Sila <strong>Log Masuk</strong> atau <strong>Daftar Akaun</strong> untuk memiliki baki simpanan RM, berdagang $BAKA, dan withdraw ke Scoreboard Minecraft!
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button 
+              className="btn-pill btn-redeem mono"
+              onClick={() => { setAuthTab("register"); setShowAuthModal(true); }}
+            >
+              <Sparkles size={14} /> Daftar Sekarang
+            </button>
+            <button 
+              className="btn-pill btn-user mono"
+              onClick={() => { setAuthTab("login"); setShowAuthModal(true); }}
+            >
+              Log Masuk
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats Pengguna */}
       <section className="stats-grid">
         <div className="card">
           <span className="stat-label mono">Baki Modal Tunai (MYR)</span>
           <div className="stat-val mono" style={{ color: "#fff" }}>
-            RM {currentUser ? currentUser.fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 }) : "0.00"}
+            {currentUser ? (
+              `RM ${currentUser.fiatBalance.toLocaleString("en-MY", { minimumFractionDigits: 2 })}`
+            ) : (
+              <span className="stat-locked-badge" onClick={() => setShowAuthModal(true)}>
+                <Lock size={16} /> Sila Log Masuk
+              </span>
+            )}
           </div>
 
           <div className="stat-actions-row">
             <button 
               className="btn-pill btn-withdraw mono"
               style={{ fontSize: "0.78rem", padding: "0.45rem 0.85rem" }}
-              onClick={() => setShowWithdrawModal(true)}
+              onClick={() => requireAuth(() => setShowWithdrawModal(true))}
             >
               <ArrowDownToLine size={14} /> Withdraw Server
             </button>
@@ -601,7 +642,13 @@ function App() {
         <div className="card">
           <span className="stat-label mono">Pegangan $BAKA</span>
           <div className="stat-val mono" style={{ color: "var(--green)" }}>
-            {currentUser ? currentUser.bakaBalance.toFixed(4) : "0.0000"} <span style={{ fontSize: "0.8rem" }}>BAKA</span>
+            {currentUser ? (
+              `${currentUser.bakaBalance.toFixed(4)} BAKA`
+            ) : (
+              <span className="stat-locked-badge" onClick={() => setShowAuthModal(true)}>
+                <Lock size={16} /> Sila Log Masuk
+              </span>
+            )}
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem", display: "block" }}>
             Boleh dijual bila-bila masa untuk dapatkan RM
@@ -621,7 +668,7 @@ function App() {
 
       {/* Trading Grid */}
       <div className="trading-grid">
-        {/* Graf Carta Pasaran dengan Pips Tracker & Timeframe */}
+        {/* Graf Pasaran */}
         <div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
@@ -632,12 +679,10 @@ function App() {
             </div>
 
             <div className="chart-controls-toolbar">
-              {/* Pips Meter Badge */}
               <div className="pips-badge mono" style={{ color: currentTickPips >= 0 ? "var(--green)" : "var(--red)" }}>
                 {currentTickPips >= 0 ? `+${currentTickPips}` : `${currentTickPips}`} Pips
               </div>
 
-              {/* Pilihan Timeframe */}
               <div className="btn-group">
                 {["1M", "5M", "15M", "1H"].map((tf) => (
                   <button
@@ -650,7 +695,6 @@ function App() {
                 ))}
               </div>
 
-              {/* Pilihan Mod Carta */}
               <div className="btn-group">
                 <button 
                   className={`btn-mode mono ${chartMode === "candle" ? "active" : ""}`}
@@ -668,7 +712,6 @@ function App() {
             </div>
           </div>
 
-          {/* Bar Info OHLC */}
           <div className="ohlc-bar mono">
             <div style={{ display: "flex", gap: "0.6rem" }}>
               <span>O: <strong style={{ color: "#fff" }}>{latestCandle.open.toFixed(3)}</strong></span>
@@ -679,7 +722,6 @@ function App() {
             <span>Timeframe: {timeframe}</span>
           </div>
 
-          {/* Paparan SVG Chart */}
           <div className="chart-box">
             <svg viewBox="0 0 500 240" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
               {verticalGridXs.map((xVal, idx) => (
@@ -793,8 +835,25 @@ function App() {
           </div>
         </div>
 
-        {/* Meja Pesanan & Leverage */}
-        <div className="card">
+        {/* Meja Pesanan (Order Desk) Berfungsi / Dikunci jika Guest */}
+        <div className="card order-desk-wrapper">
+          {!currentUser && (
+            <div className="desk-lock-overlay">
+              <Lock size={32} color="var(--gold)" style={{ marginBottom: "0.5rem" }} />
+              <h4 style={{ fontSize: "1rem", fontWeight: 800 }}>Akses Dagangan Dikunci</h4>
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.3rem", maxWidth: "230px" }}>
+                Sila daftar akaun atau log masuk untuk memulakan pesanan beli & jual $BAKA.
+              </p>
+              <button 
+                className="btn-pill btn-redeem mono" 
+                style={{ marginTop: "1rem" }}
+                onClick={() => { setAuthTab("register"); setShowAuthModal(true); }}
+              >
+                <UserPlus size={14} /> Daftar / Log Masuk
+              </button>
+            </div>
+          )}
+
           <div className="tab-row">
             <button 
               className={`tab-btn buy ${orderType === "buy" ? "active" : ""}`}
@@ -810,7 +869,6 @@ function App() {
             </button>
           </div>
 
-          {/* Gandaan Leverage */}
           <div>
             <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
               <Flame size={13} color="var(--gold)" /> GANDAAN LEVERAGE
@@ -861,13 +919,13 @@ function App() {
             <button type="submit" className={`btn-action-order mono ${orderType}`}>
               {currentUser
                 ? orderType === "buy" ? `Sahkan Beli (${leverage}x)` : `Sahkan Jual (${leverage}x)`
-                : "Log Masuk Untuk Berdagang"}
+                : "Sila Log Masuk Untuk Berdagang"}
             </button>
           </form>
         </div>
       </div>
 
-      {/* SEKSYEN REKOD SEJARAH: PIPS HISTORY & USER TRADES */}
+      {/* SEKSYEN REKOD SEJARAH */}
       <section className="history-section">
         {/* Jadual Rekod Sejarah Pips */}
         <div className="card">
@@ -941,7 +999,7 @@ function App() {
                 ) : (
                   <tr>
                     <td colSpan="4" style={{ textAlign: "center", color: "var(--text-muted)", padding: "1.5rem" }}>
-                      Belum ada rekod transaksi.
+                      {currentUser ? "Belum ada rekod transaksi." : "Sila log masuk untuk melihat rekod akaun anda."}
                     </td>
                   </tr>
                 )}
@@ -1017,17 +1075,15 @@ function App() {
         </div>
       )}
 
-      {/* MODAL AUTH */}
+      {/* MODAL AUTH (LOGIN & REGISTER) */}
       {showAuthModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
               <h3 style={{ fontSize: "1.2rem", fontWeight: 800 }}>Pusat Akses Akaun</h3>
-              {currentUser && (
-                <button onClick={() => setShowAuthModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
-                  <X size={18} />
-                </button>
-              )}
+              <button onClick={() => setShowAuthModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
             </div>
 
             <div className="auth-tabs mono">
@@ -1077,7 +1133,7 @@ function App() {
               </div>
 
               <button type="submit" className="btn-action-order mono buy">
-                {authTab === "login" ? "Log Masuk Sekarang" : "Cipta Akaun & Mula Dagang"}
+                {authTab === "login" ? "Log Masuk Sekarang" : "Cipta Akaun Percuma"}
               </button>
             </form>
           </div>
