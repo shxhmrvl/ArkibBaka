@@ -21,29 +21,67 @@ const generateRandomPinCode = () => {
   return `BK5-${p1}-${p2}`;
 };
 
-const generateInitialCandles = () => {
-  let base = 2.40;
+// Penjana data khusus bagi setiap Timeframe (1M, 5M, 15M, 1H)
+const generateTimeframeCandles = (tf, currentPrice) => {
+  let count, volatility, timeStepMinutes, baseDelta;
+
+  if (tf === "1M") {
+    count = 24;
+    volatility = 0.025; // Pergerakan kecil halus
+    timeStepMinutes = 1;
+    baseDelta = 0.02;
+  } else if (tf === "5M") {
+    count = 18;
+    volatility = 0.055; // Pergerakan sederhana
+    timeStepMinutes = 5;
+    baseDelta = 0.04;
+  } else if (tf === "15M") {
+    count = 14;
+    volatility = 0.11; // Trend luas
+    timeStepMinutes = 15;
+    baseDelta = 0.08;
+  } else {
+    // 1H (Makro)
+    count = 10;
+    volatility = 0.22; // Lilin besar & julat tinggi
+    timeStepMinutes = 60;
+    baseDelta = 0.15;
+  }
+
+  let base = currentPrice - (count * baseDelta * 0.4);
   const list = [];
-  for (let i = 0; i < 22; i++) {
-    const delta = (Math.random() * 0.08 - 0.04);
-    const open = base;
-    const close = Math.max(0.01, +(open + delta).toFixed(4));
-    const high = +(Math.max(open, close) + Math.random() * 0.03).toFixed(4);
-    const low = +(Math.min(open, close) - Math.random() * 0.03).toFixed(4);
-    list.push({ id: i, open, close, high, low, time: `${i}:00` });
+  const now = new Date();
+
+  for (let i = 0; i < count; i++) {
+    const delta = (Math.random() * volatility * 2 - volatility);
+    const open = Math.max(0.1, +(base).toFixed(4));
+    const close = Math.max(0.1, +(open + delta).toFixed(4));
+    const high = +(Math.max(open, close) + Math.random() * (volatility * 0.45)).toFixed(4);
+    const low = +(Math.min(open, close) - Math.random() * (volatility * 0.45)).toFixed(4);
+
+    const candleTime = new Date(now.getTime() - (count - i) * timeStepMinutes * 60000);
+    const timeLabel = tf === "1H"
+      ? `${candleTime.getHours().toString().padStart(2, '0')}:00`
+      : `${candleTime.getHours().toString().padStart(2, '0')}:${candleTime.getMinutes().toString().padStart(2, '0')}`;
+
+    list.push({ id: `${tf}-${i}`, open, close, high, low, time: timeLabel });
     base = close;
   }
+
+  // Lilin terakhir sentiasa selaras dengan harga live semasa
+  list[list.length - 1].close = currentPrice;
+  list[list.length - 1].high = Math.max(list[list.length - 1].high, currentPrice);
+  list[list.length - 1].low = Math.min(list[list.length - 1].low, currentPrice);
+
   return list;
 };
 
 function App() {
-  // Pangkalan Data Pengguna
   const [usersDb, setUsersDb] = useState(() => {
     const saved = localStorage.getItem("baka_users_db");
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Pengguna Aktif (Null jika belum login)
   const [currentUsername, setCurrentUsername] = useState(() => {
     return localStorage.getItem("baka_active_user") || "";
   });
@@ -55,23 +93,25 @@ function App() {
   const [timeframe, setTimeframe] = useState("1M");
   const [price, setPrice] = useState(2.50);
   const [prevPrice, setPrevPrice] = useState(2.50);
-  const [candles, setCandles] = useState(generateInitialCandles);
-  const [priceHistory, setPriceHistory] = useState([2.30, 2.38, 2.45, 2.42, 2.50]);
+  
+  // Data lilin berasingan mengikut Timeframe
+  const [candles, setCandles] = useState(() => generateTimeframeCandles("1M", 2.50));
+  const [priceHistory, setPriceHistory] = useState([2.45, 2.47, 2.48, 2.49, 2.50]);
   const [marketBias, setMarketBias] = useState("neutral");
 
   // Sejarah Pips & Leverage
   const [leverage, setLeverage] = useState(1);
   const [pipsHistory, setPipsHistory] = useState([
-    { id: 1, pips: "+12.0", type: "TICK", oldPrice: 2.4880, newPrice: 2.5000, isPositive: true, time: "11:05:12" },
-    { id: 2, pips: "-4.5", type: "TICK", oldPrice: 2.4925, newPrice: 2.4880, isPositive: false, time: "11:04:45" },
-    { id: 3, pips: "+25.0", type: "PUMP", oldPrice: 2.4675, newPrice: 2.4925, isPositive: true, time: "11:03:30" }
+    { id: 1, pips: "+12.0", type: "TICK", oldPrice: 2.4880, newPrice: 2.5000, isPositive: true, time: "Baru tadi" },
+    { id: 2, pips: "-4.5", type: "TICK", oldPrice: 2.4925, newPrice: 2.4880, isPositive: false, time: "1m lepas" },
+    { id: 3, pips: "+25.0", type: "PUMP", oldPrice: 2.4675, newPrice: 2.4925, isPositive: true, time: "3m lepas" }
   ]);
 
   // Transaksi
   const [tradeAmount, setTradeAmount] = useState("");
   const [orderType, setOrderType] = useState("buy");
 
-  // Baucar PIN Database
+  // Baucar PIN
   const [pinDatabase, setPinDatabase] = useState(() => {
     const savedPins = localStorage.getItem("baka_pin_database");
     return savedPins ? JSON.parse(savedPins) : [
@@ -109,6 +149,7 @@ function App() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  // Simpanan LocalStorage
   useEffect(() => {
     localStorage.setItem("baka_users_db", JSON.stringify(usersDb));
   }, [usersDb]);
@@ -129,7 +170,24 @@ function App() {
     localStorage.setItem("baka_withdraw_requests", JSON.stringify(withdrawRequests));
   }, [withdrawRequests]);
 
-  // Pasaran Berterusan
+  // BILA TIMEFRAME BERUBAH: Hasilkan struktur graf baharu secara drastik!
+  const switchTimeframe = (newTf) => {
+    setTimeframe(newTf);
+    const updatedCandles = generateTimeframeCandles(newTf, price);
+    setCandles(updatedCandles);
+
+    // Kemas kini garisan line mengikut harga close lilin timeframe baharu
+    const newHistory = updatedCandles.map((c) => c.close);
+    setPriceHistory(newHistory);
+
+    const desc = newTf === "1M" ? "Lilin 1 Minit (Scalp Laju)" 
+      : newTf === "5M" ? "Lilin 5 Minit (Swing)" 
+      : newTf === "15M" ? "Lilin 15 Minit (Intraday)" 
+      : "Lilin 1 Jam (Makro Trend)";
+    showToast(`Timeframe ditukar: ${newTf} - ${desc}`);
+  };
+
+  // Gelung Pasaran Masa Nyata
   useEffect(() => {
     let tickCounter = 0;
 
@@ -161,17 +219,25 @@ function App() {
           tickCounter++;
           const lastCandle = prevCandles[prevCandles.length - 1];
 
-          if (tickCounter >= 4) {
+          // Kelajuan pembentukan lilin baharu mengikut timeframe
+          const ticksPerCandle = timeframe === "1M" ? 4 : timeframe === "5M" ? 8 : timeframe === "15M" ? 12 : 16;
+
+          if (tickCounter >= ticksPerCandle) {
             tickCounter = 0;
+            const now = new Date();
+            const timeLabel = timeframe === "1H"
+              ? `${now.getHours().toString().padStart(2, '0')}:00`
+              : `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
             const newCandle = {
               id: Date.now(),
               open: next,
               close: next,
               high: next,
               low: next,
-              time: new Date().toLocaleTimeString().slice(0, 5)
+              time: timeLabel
             };
-            return [...prevCandles.slice(-21), newCandle];
+            return [...prevCandles.slice(1), newCandle];
           } else {
             const updated = {
               ...lastCandle,
@@ -188,7 +254,7 @@ function App() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [marketBias]);
+  }, [marketBias, timeframe]);
 
   // Auth Handlers
   const handleRegister = (e) => {
@@ -232,7 +298,7 @@ function App() {
     );
 
     if (!existingUser) {
-      setAuthError("Username atau Password salah! Belum ada akaun? Sila daftar akaun.");
+      setAuthError("Username atau Password salah! Belum ada akaun? Sila daftar.");
       return;
     }
 
@@ -248,11 +314,10 @@ function App() {
     showToast("Anda telah log keluar. Sekarang dalam Mod Tetamu.");
   };
 
-  // Helper untuk buka modal auth jika guest
   const requireAuth = (callback) => {
     if (!currentUser) {
       setShowAuthModal(true);
-      setAuthError("Sila log masuk atau daftar akaun untuk meneruskan!");
+      setAuthError("Sila log masuk atau daftar akaun terlebih dahulu!");
       return;
     }
     callback();
@@ -487,11 +552,11 @@ function App() {
     showToast(`📉 DUMP -${pct}%!`);
   };
 
-  // Skala Chart
+  // Skala Chart Dinamik mengikut Timeframe Lilin Semasa
   const allCandleHighs = candles.map((c) => c.high);
   const allCandleLows = candles.map((c) => c.low);
-  const minCandle = Math.min(...allCandleLows) * 0.992;
-  const maxCandle = Math.max(...allCandleHighs) * 1.008;
+  const minCandle = Math.min(...allCandleLows) * 0.99;
+  const maxCandle = Math.max(...allCandleHighs) * 1.01;
   const candleRange = maxCandle - minCandle || 1;
   const getY = (val) => 220 - ((val - minCandle) / candleRange) * 180;
 
@@ -514,6 +579,9 @@ function App() {
   const currentPriceY = getY(price);
   const latestCandle = candles[candles.length - 1] || { open: price, high: price, low: price, close: price };
   const currentTickPips = +((price - prevPrice) * 10000).toFixed(1);
+
+  // Lebar lilin menyesuaikan bilangan lilin timeframe
+  const candleWidth = timeframe === "1M" ? 11 : timeframe === "5M" ? 15 : timeframe === "15M" ? 20 : 28;
 
   return (
     <div className="container">
@@ -575,7 +643,7 @@ function App() {
         </div>
       </header>
 
-      {/* PERINGATAN LOG MASUK / DAFTAR BAGI GUEST */}
+      {/* Banner Peringatan Guest */}
       {!currentUser && (
         <div className="guest-banner">
           <div className="guest-banner-left">
@@ -683,12 +751,13 @@ function App() {
                 {currentTickPips >= 0 ? `+${currentTickPips}` : `${currentTickPips}`} Pips
               </div>
 
+              {/* BUTANG TIMEFRAME BERFUNGSI SEBENAR */}
               <div className="btn-group">
                 {["1M", "5M", "15M", "1H"].map((tf) => (
                   <button
                     key={tf}
                     className={`btn-mode mono ${timeframe === tf ? "active" : ""}`}
-                    onClick={() => { setTimeframe(tf); showToast(`Timeframe ditukar ke ${tf}`); }}
+                    onClick={() => switchTimeframe(tf)}
                   >
                     {tf}
                   </button>
@@ -719,7 +788,9 @@ function App() {
               <span>L: <strong style={{ color: "var(--red)" }}>{latestCandle.low.toFixed(3)}</strong></span>
               <span>C: <strong style={{ color: "#fff" }}>{latestCandle.close.toFixed(3)}</strong></span>
             </div>
-            <span>Timeframe: {timeframe}</span>
+            <span>
+              Timeframe: <strong style={{ color: "var(--cyan)" }}>{timeframe}</strong> ({candles.length} Lilin)
+            </span>
           </div>
 
           <div className="chart-box">
@@ -789,7 +860,6 @@ function App() {
 
               {chartMode === "candle" ? (
                 candles.map((c, i) => {
-                  const candleWidth = 12;
                   const x = 15 + i * (410 / candles.length);
                   const isBullish = c.close >= c.open;
                   const candleColor = isBullish ? "var(--green)" : "var(--red)";
@@ -835,7 +905,7 @@ function App() {
           </div>
         </div>
 
-        {/* Meja Pesanan (Order Desk) Berfungsi / Dikunci jika Guest */}
+        {/* Order Desk */}
         <div className="card order-desk-wrapper">
           {!currentUser && (
             <div className="desk-lock-overlay">
@@ -1075,7 +1145,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL AUTH (LOGIN & REGISTER) */}
+      {/* MODAL AUTH */}
       {showAuthModal && (
         <div className="modal-overlay">
           <div className="modal-content">
