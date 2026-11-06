@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
@@ -6,7 +6,7 @@ import {
   Copy, PlusCircle, Ticket, MessageCircle, Lock, Unlock, 
   Clock, CheckCircle2, X, Coins, Crown, Package, Key, 
   ThumbsUp, CalendarCheck, Star, AlertCircle, Radio, Tag, 
-  HelpCircle, Check, Search
+  HelpCircle, Check, Search, MoreVertical, History, Settings
 } from "lucide-react";
 
 const ADMIN_PIN = "200200";
@@ -21,7 +21,7 @@ const load = (k, def) => { try { const v = localStorage.getItem(k); return v ? J
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const genPin = () => `BK5-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-// Senarai Produk & Item BakaCrew Store Gaya FallXD
+// Senarai Produk & Item BakaCrew Store
 const STORE_ITEMS = [
   {
     id: "rank_mvp",
@@ -122,12 +122,21 @@ function App() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Modals & Menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState("login");
   const [authForm, setAuthForm] = useState({ user: "", pass: "", ign: "", err: "" });
 
   const [showRedeem, setShowRedeem] = useState(false);
   const [inputPin, setInputPin] = useState("");
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [editGamerTag, setEditGamerTag] = useState("");
+
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   const [buyModalItem, setBuyModalItem] = useState(null);
   const [claimIgn, setClaimIgn] = useState("");
@@ -141,7 +150,22 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // Semak status pelayan Minecraft Bedrock secara langsung
+  // Tutup dropdown apabila klik di luar menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  // Semak status pelayan Minecraft Bedrock
   useEffect(() => {
     fetch(`https://api.mcsrvstat.us/bedrock/3/${SERVER_IP}:${SERVER_PORT}`)
       .then((res) => res.json())
@@ -286,11 +310,20 @@ function App() {
     showToast("Penebusan ditandakan selesai.");
   };
 
+  const handleUpdateGamerTag = (e) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const cleanIgn = editGamerTag.trim();
+    if (!cleanIgn) return showToast("GamerTag tidak boleh kosong!");
+    updateUser({ gamerTag: cleanIgn });
+    setShowSettings(false);
+    showToast(`GamerTag dikemas kini ke: ${cleanIgn}`);
+  };
+
   const todayStr = new Date().toDateString();
   const isVotedToday = currentUser?.lastVote === todayStr;
   const isDailyClaimed = currentUser?.lastDaily === todayStr;
 
-  // Penapisan Kategori & Carian
   const filteredItems = STORE_ITEMS.filter((item) => {
     const matchesCat = activeCategory === "Semua" || item.category === activeCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -311,7 +344,7 @@ function App() {
       </div>
 
       <div className="container">
-        {/* 2. Navbar Modern */}
+        {/* 2. Navbar Modern dengan Three-Dot Menu */}
         <nav className="navbar">
           <div className="brand">
             <div className="brand-icon"><Server size={20} /></div>
@@ -324,14 +357,11 @@ function App() {
           <div className="nav-actions">
             {currentUser ? (
               <>
-                <button className="btn-pill btn-user mono">
+                <button className="btn-pill btn-user mono" onClick={() => { setEditGamerTag(currentUser.gamerTag || ""); setShowSettings(true); }}>
                   <User size={13} /> {currentUser.gamerTag || currentUser.username}
                 </button>
                 <button className="btn-pill btn-green-gradient mono" onClick={() => setShowRedeem(true)}>
                   <Ticket size={13} /> Tebus PIN
-                </button>
-                <button className="btn-pill btn-user mono" onClick={() => { setCurrentUsername(""); save("bc_active_user", ""); showToast("Log keluar selesai."); }}>
-                  <LogOut size={13} />
                 </button>
               </>
             ) : (
@@ -344,9 +374,101 @@ function App() {
                 </button>
               </>
             )}
-            <button className="btn-pill btn-admin mono" onClick={() => setShowAdmin(true)}>
-              {isAdmin ? <Unlock size={13} /> : <Lock size={13} />} Admin
-            </button>
+
+            {/* BUTANG TIGA TITIK (THREE-DOT NAVIGATION) */}
+            <div className="three-dots-wrapper" ref={menuRef}>
+              <button 
+                className={`btn-three-dots ${isMenuOpen ? "active" : ""}`}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                title="Pilihan Navigasi"
+              >
+                <MoreVertical size={18} />
+              </button>
+
+              {/* DROPDOWN MENU */}
+              {isMenuOpen && (
+                <div className="three-dots-dropdown mono">
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setAuthTab("login");
+                      setShowAuth(true);
+                    }}
+                  >
+                    <LogIn size={14} color="var(--cyan)" />
+                    <span>Login</span>
+                  </button>
+
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setAuthTab("register");
+                      setShowAuth(true);
+                    }}
+                  >
+                    <UserPlus size={14} color="var(--green)" />
+                    <span>Register</span>
+                  </button>
+
+                  <div className="dropdown-divider"></div>
+
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowHistoryModal(true);
+                    }}
+                  >
+                    <History size={14} color="var(--cyan)" />
+                    <span>Purchase History</span>
+                  </button>
+
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowRedeem(true);
+                    }}
+                  >
+                    <Ticket size={14} color="var(--green)" />
+                    <span>Redeem Coupon</span>
+                  </button>
+
+                  <button 
+                    className="dropdown-item" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      if (!currentUser) {
+                        setAuthTab("login");
+                        setShowAuth(true);
+                        showToast("Sila log masuk untuk tetapan akaun.");
+                      } else {
+                        setEditGamerTag(currentUser.gamerTag || "");
+                        setShowSettings(true);
+                      }
+                    }}
+                  >
+                    <Settings size={14} color="var(--text-muted)" />
+                    <span>Account Settings</span>
+                  </button>
+
+                  <div className="dropdown-divider"></div>
+
+                  <button 
+                    className="dropdown-item admin-highlight" 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setShowAdmin(true);
+                    }}
+                  >
+                    <Shield size={14} />
+                    <span>Admin Dashboard</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
 
@@ -634,8 +756,8 @@ function App() {
           </a>
         </div>
 
-        {/* 7. Rekod Penebusan Akaun */}
-        <div className="claims-card">
+        {/* 7. Rekod Penebusan Akaun (Boleh diakses juga dari Dropdown) */}
+        <div className="claims-card" id="claims-section">
           <h4 style={{ fontSize: "0.92rem", display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.85rem" }}>
             <Clock size={16} color="var(--cyan)" /> Rekod Pesanan & Penebusan Anda
           </h4>
@@ -662,7 +784,117 @@ function App() {
           </div>
         </div>
 
-        {/* Modal Pengesahan Pembelian & Kupon Diskaun */}
+        {/* MODAL 1: Purchase History Popup Modal */}
+        {showHistoryModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+                <h3 style={{ fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--cyan)" }}>
+                  <History size={16} /> Sejarah Pembelian Akaun
+                </h3>
+                <button onClick={() => setShowHistoryModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={16} /></button>
+              </div>
+
+              <div className="mono" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                {!currentUser ? (
+                  <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", padding: "1.5rem" }}>
+                    Sila log masuk untuk melihat sejarah pembelian anda.
+                  </p>
+                ) : claimsList.filter((c) => c.username === currentUser.username).length === 0 ? (
+                  <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", padding: "1.5rem" }}>
+                    Tiada rekod pembelian dijumpai.
+                  </p>
+                ) : (
+                  claimsList.filter((c) => c.username === currentUser.username).map((c) => (
+                    <div key={c.id} className="claim-row">
+                      <div>
+                        <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.78rem" }}>{c.itemName}</div>
+                        <div style={{ color: "var(--text-muted)", fontSize: "0.65rem" }}>GamerTag: {c.gamerTag} • {c.time}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ color: "var(--cyan)", fontWeight: 800, fontSize: "0.8rem" }}>RM {c.price.toFixed(2)}</div>
+                        <span className={`badge-status ${c.status === "PENDING" ? "badge-pending" : "badge-done"}`}>{c.status}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <button 
+                type="button" 
+                className="btn-buy-action mono" 
+                style={{ marginTop: "1rem" }}
+                onClick={() => setShowHistoryModal(false)}
+              >
+                Tutup Sejarah
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 2: Account Settings Modal */}
+        {showSettings && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+                <h3 style={{ fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--text-main)" }}>
+                  <Settings size={16} /> Tetapan Akaun Pengguna
+                </h3>
+                <button onClick={() => setShowSettings(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={16} /></button>
+              </div>
+
+              {currentUser && (
+                <form onSubmit={handleUpdateGamerTag}>
+                  <div style={{ background: "var(--bg-deep)", border: "1px solid var(--border-ui)", padding: "0.8rem", borderRadius: "10px", marginBottom: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.3rem" }}>
+                      <span>Nama Pengguna Portal:</span>
+                      <strong className="mono" style={{ color: "#fff" }}>{currentUser.username}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                      <span>Baki Dompet Simpanan:</span>
+                      <strong className="mono" style={{ color: "var(--green)" }}>RM {currentUser.balanceRM.toFixed(2)}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: "1rem" }}>
+                    <label className="mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>KEMAS KINI MINECRAFT BEDROCK GAMERTAG</label>
+                    <input 
+                      type="text" 
+                      className="input-styled mono" 
+                      value={editGamerTag} 
+                      onChange={(e) => setEditGamerTag(e.target.value)} 
+                      placeholder="Masukkan GamerTag baharu"
+                      required 
+                    />
+                    <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.2rem", display: "block" }}>
+                      Nama ini digunakan secara automatik untuk semua pesanan dan penghantaran item.
+                    </span>
+                  </div>
+
+                  <button type="submit" className="btn-buy-action mono" style={{ marginBottom: "0.5rem" }}>
+                    Simpan Perubahan
+                  </button>
+
+                  <button 
+                    type="button" 
+                    className="btn-pill btn-user mono" 
+                    style={{ width: "100%", justifyContent: "center", background: "rgba(244, 63, 94, 0.15)", color: "var(--red)", border: "1px solid rgba(244, 63, 94, 0.3)" }}
+                    onClick={() => {
+                      setShowSettings(false);
+                      setCurrentUsername("");
+                      save("bc_active_user", "");
+                      showToast("Log keluar berjaya.");
+                    }}
+                  >
+                    <LogOut size={13} /> Log Keluar Akaun
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 3: Pengesahan Pembelian & Kupon Diskaun */}
         {buyModalItem && (
           <div className="modal-overlay">
             <div className="modal-content">
@@ -674,7 +906,7 @@ function App() {
               </div>
 
               <form onSubmit={handleConfirmBuy}>
-                {/* Pratonton Avatar Kepala Skin Minecraft */}
+                {/* Avatar Kepala Skin Minecraft Live */}
                 <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", background: "var(--bg-deep)", padding: "0.5rem 0.75rem", borderRadius: "8px", border: "1px solid var(--border-ui)", marginBottom: "0.75rem" }}>
                   <img 
                     src={`https://mc-heads.net/avatar/${(claimIgn || "Steve").trim()}/40`} 
@@ -747,7 +979,7 @@ function App() {
           </div>
         )}
 
-        {/* Modal Log Masuk / Daftar */}
+        {/* MODAL 4: Log Masuk / Daftar */}
         {showAuth && (
           <div className="modal-overlay">
             <div className="modal-content">
@@ -793,15 +1025,15 @@ function App() {
           </div>
         )}
 
-        {/* Modal Tebus PIN Tambah Nilai */}
+        {/* MODAL 5: Tebus PIN Tambah Nilai / Redeem Coupon */}
         {showRedeem && (
           <div className="modal-overlay">
             <div className="modal-content">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
-                <h3 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--green)" }}><Ticket size={16} /> Tebus PIN Tambah Nilai</h3>
+                <h3 style={{ fontSize: "0.95rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--green)" }}><Ticket size={16} /> Tebus PIN Tambah Nilai / Kupon</h3>
                 <button onClick={() => setShowRedeem(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={16} /></button>
               </div>
-              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-green-gradient mono" style={{ width: "100%", justifyContent: "center", padding: "0.55rem", marginBottom: "0.85rem" }}>
+              <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono" style={{ width: "100%", justifyContent: "center", padding: "0.55rem", marginBottom: "0.85rem" }}>
                 <MessageCircle size={13} /> Beli PIN di WhatsApp (018-3915460)
               </a>
               <form onSubmit={handleRedeemPin}>
@@ -813,7 +1045,7 @@ function App() {
           </div>
         )}
 
-        {/* Modal Admin Dashboard (PIN 200200) */}
+        {/* MODAL 6: Admin Dashboard (PIN: 200200) */}
         {showAdmin && (
           <div className="modal-overlay">
             <div className="modal-content" style={{ borderColor: "var(--gold)" }}>
