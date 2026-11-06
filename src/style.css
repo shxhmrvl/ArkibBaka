@@ -164,18 +164,18 @@ body {
   gap: 0.4rem;
 }
 
-/* User & Daily Streak Grid */
+/* 3-Column Dashboard Cards */
 .dash-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 .val-big {
-  font-size: 1.7rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  margin-top: 0.2rem;
+  margin-top: 0.3rem;
 }
 
 .streak-row {
