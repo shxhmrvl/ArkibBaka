@@ -273,7 +273,7 @@ function App() {
   useEffect(() => saveStorage("bakahub_audit_logs_v10", auditLogs), [auditLogs]);
   useEffect(() => saveStorage("bakahub_notifications_v10", notifications), [notifications]);
 
-  // AUTOMATIK TANDA SEMUA NOTIFIKASI DIBACA BILA PENGGUNA BUKA TAB NOTIFIKASI
+  // AUTOMATIK TANDA NOTIFIKASI TELAH DIBACA BILA BUKA TAB NOTIFIKASI
   const markNotificationsAsRead = () => {
     setNotifications((prev) => {
       const updated = prev.map((n) => {
@@ -481,6 +481,24 @@ function App() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.price, 0);
   const cartTotal = +(cartSubtotal * (1 - discountPercent / 100)).toFixed(2);
 
+  // FUNGSI PENGESAHAN KETIKA TEKAN BUTANG "BELI" (TIDAK TERUS PROCEED, BUKA FORUM PENGESAHAN DAHULU)
+  const handleBuyClick = (product) => {
+    requireUser(() => {
+      // Masukkan produk ke dalam senarai troli jika belum ada
+      if (!cart.some((item) => item.id === product.id)) {
+        const updatedCart = [...cart, product];
+        setCart(updatedCart);
+        saveStorage("bakahub_cart_v10", updatedCart);
+      }
+      // Tutup sebarang modal pratonton atau perincian yang sedang terbuka
+      setShowProductDetail(null);
+      setPreviewProduct(null);
+      // Keluarkan borang troli / pengesahan untuk pengguna buat semakan dan double-confirm
+      setShowCartDrawer(true);
+    });
+  };
+
+  // CHECKOUT SELEPAS PENGGUNA SAHKAN PADA BORANG TROLI
   const executeCheckout = (itemsToBuy, totalCost) => {
     requireUser(() => {
       if (currentUser.balance < totalCost) {
@@ -512,7 +530,7 @@ function App() {
 
       logAuditAction("ORDER_PLACED", `Pesanan baru oleh ${currentUser.username} (Jumlah: RM ${totalCost})`);
       pushNotification(currentUser.username, "Pesanan Dihantar", `Pesanan anda (${itemsToBuy.length} item) sedang diproses oleh admin.`);
-      showToast(`⏳ Pesanan berjaya! Admin sedang menyiapkan fail & kredensial anda.`);
+      showToast(`⏳ Pesanan berjaya disahkan! Admin sedang menyiapkan fail & kredensial anda.`);
     });
   };
 
@@ -545,13 +563,10 @@ function App() {
 
   const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
   const myOrders = orders.filter((o) => currentUser && o.username === currentUser.username);
-  
-  // HANYA KIRA NOTIFIKASI YANG BENAR-BENAR BELUM DIBACA OLEH PENGGUNA
   const myUnreadNotifications = notifications.filter((n) => 
     (n.targetUser === "all" || (currentUser && n.targetUser === currentUser.username)) && !n.read
   ).length;
 
-  // POPUP BILANGAN DI BUTANG '=' HANYA MUNCUL JIKA ADA NOTIFIKASI BELUM DIBACA SAHAJA
   const totalAlertCount = myUnreadNotifications;
 
   const handleSendTicket = async (e) => {
@@ -673,7 +688,6 @@ function App() {
           aria-label="Menu Utama"
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          {/* BILANGAN POPUP MERAH HANYA MUNCUL JIKA ADA NOTIFIKASI BELUM DIBACA */}
           {totalAlertCount > 0 && (
             <span className="badge-alert-dot">
               {totalAlertCount}
@@ -1080,9 +1094,10 @@ function App() {
                   >
                     <ShoppingCart size={15} />
                   </button>
+                  {/* BUTANG BELI: KELUARKAN BORANG PENGESAHAN DAHULU */}
                   <button 
                     className="btn-buy-now mono"
-                    onClick={() => executeCheckout([p], p.price)}
+                    onClick={() => handleBuyClick(p)}
                   >
                     Beli
                   </button>
@@ -1138,10 +1153,11 @@ function App() {
                 <span className="mono" style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--emerald)" }}>RM {showProductDetail.price.toFixed(2)}</span>
               </div>
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button className="btn-action-icon mono" onClick={() => { addToCart(showProductDetail); setShowProductDetail(null); }} style={{ width: "auto", padding: "0 0.9rem" }}>
+                <button className="btn-action-icon mono" onClick={() => { addToCart(showProductDetail); }} style={{ width: "auto", padding: "0 0.9rem" }}>
                   + Troli
                 </button>
-                <button className="btn-buy-now mono" onClick={() => { const p = showProductDetail; setShowProductDetail(null); executeCheckout([p], p.price); }}>
+                {/* BUTANG BELI SEKARANG PADA DETAILS: KELUARKAN BORANG PENGESAHAN DAHULU */}
+                <button className="btn-buy-now mono" onClick={() => handleBuyClick(showProductDetail)}>
                   Beli Sekarang
                 </button>
               </div>
@@ -1176,12 +1192,10 @@ function App() {
               <span className="mono" style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--emerald)" }}>
                 RM {previewProduct.price.toFixed(2)}
               </span>
+              {/* BUTANG BELI PADA PRATONTON: KELUARKAN BORANG PENGESAHAN DAHULU */}
               <button 
                 className="btn-buy-now mono"
-                onClick={() => {
-                  setPreviewProduct(null);
-                  executeCheckout([previewProduct], previewProduct.price);
-                }}
+                onClick={() => handleBuyClick(previewProduct)}
               >
                 Beli Produk Ini
               </button>
@@ -1403,13 +1417,15 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TROLI BELI-BELAH */}
+      {/* =========================================================
+          BORANG TROLI & PENGESAHAN PEMBELIAN (DOUBLE-CONFIRM MODAL)
+          ========================================================= */}
       {showCartDrawer && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                <ShoppingCart size={18} color="var(--neon-cyan)" /> Troli Pembelian ({cart.length})
+                <ShoppingCart size={18} color="var(--neon-cyan)" /> Troli & Pengesahan Pembelian ({cart.length})
               </h3>
               <button onClick={() => setShowCartDrawer(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
@@ -1425,7 +1441,7 @@ function App() {
                         <strong style={{ fontSize: "0.85rem" }}>{item.title}</strong>
                         <div className="mono" style={{ fontSize: "0.75rem", color: "var(--emerald)" }}>RM {item.price.toFixed(2)}</div>
                       </div>
-                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
+                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -1455,18 +1471,25 @@ function App() {
                       <span className="mono">- RM {(cartSubtotal * discountPercent / 100).toFixed(2)}</span>
                     </div>
                   )}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.1rem", fontWeight: 800, marginTop: "0.3rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.2rem" }}>
+                    <span>Baki Dompet Anda:</span>
+                    <span className="mono" style={{ color: currentUser && currentUser.balance >= cartTotal ? "var(--emerald)" : "var(--danger)" }}>
+                      RM {currentUser ? currentUser.balance.toFixed(2) : "0.00"}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.1rem", fontWeight: 800, marginTop: "0.4rem" }}>
                     <span>Total Pembayaran:</span>
                     <span className="mono" style={{ color: "var(--emerald)" }}>RM {cartTotal.toFixed(2)}</span>
                   </div>
                 </div>
 
+                {/* BUTANG PENGESAHAN DUA KALI (DOUBLE-CONFIRM) */}
                 <button 
                   className="btn-buy-now mono" 
                   style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
                   onClick={() => executeCheckout(cart, cartTotal)}
                 >
-                  Bayar Guna Baki (RM {cartTotal.toFixed(2)})
+                  Sahkan & Bayar Guna Baki (RM {cartTotal.toFixed(2)})
                 </button>
               </div>
             )}
@@ -1526,7 +1549,7 @@ function App() {
               <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "login" ? "2px solid var(--emerald)" : "none", color: authTab === "login" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("login")}>Log Masuk</button>
               <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "register" ? "2px solid var(--emerald)" : "none", color: authTab === "register" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("register")}>Daftar Akaun</button>
             </div>
-            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "var(--danger)", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
+            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "#F43F5E", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
             <form onSubmit={handleAuthSubmit}>
               <div style={{ marginBottom: "0.8rem" }}>
                 <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>USERNAME</label>
