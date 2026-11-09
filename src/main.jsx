@@ -7,7 +7,7 @@ import {
   Package, Sparkles, Globe, Bot, ArrowRight, Eye, Search, 
   ShoppingCart, Download, Code, Star, Trash2, Check,
   Send, LifeBuoy, Inbox, Clock, CheckCircle2, Crown, Zap, ShieldCheck, Menu,
-  Receipt, HelpCircle, Image as ImageIcon
+  Receipt, HelpCircle, Image as ImageIcon, Bell, CheckCheck
 } from "lucide-react";
 
 // KONFIGURASI PENTADBIR & SOKONGAN
@@ -273,6 +273,26 @@ function App() {
   useEffect(() => saveStorage("bakahub_audit_logs_v10", auditLogs), [auditLogs]);
   useEffect(() => saveStorage("bakahub_notifications_v10", notifications), [notifications]);
 
+  // AUTOMATIK TANDA SEMUA NOTIFIKASI DIBACA BILA PENGGUNA BUKA TAB NOTIFIKASI
+  const markNotificationsAsRead = () => {
+    setNotifications((prev) => {
+      const updated = prev.map((n) => {
+        if (n.targetUser === "all" || (currentUser && n.targetUser === currentUser.username)) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
+      saveStorage("bakahub_notifications_v10", updated);
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    if (showUserDashboard && dashboardTab === "notifications") {
+      markNotificationsAsRead();
+    }
+  }, [showUserDashboard, dashboardTab]);
+
   useEffect(() => {
     const handleOutsideClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -525,7 +545,14 @@ function App() {
 
   const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
   const myOrders = orders.filter((o) => currentUser && o.username === currentUser.username);
-  const myUnreadNotifications = notifications.filter((n) => (n.targetUser === "all" || (currentUser && n.targetUser === currentUser.username)) && !n.read).length;
+  
+  // HANYA KIRA NOTIFIKASI YANG BENAR-BENAR BELUM DIBACA OLEH PENGGUNA
+  const myUnreadNotifications = notifications.filter((n) => 
+    (n.targetUser === "all" || (currentUser && n.targetUser === currentUser.username)) && !n.read
+  ).length;
+
+  // POPUP BILANGAN DI BUTANG '=' HANYA MUNCUL JIKA ADA NOTIFIKASI BELUM DIBACA SAHAJA
+  const totalAlertCount = myUnreadNotifications;
 
   const handleSendTicket = async (e) => {
     e.preventDefault();
@@ -629,7 +656,7 @@ function App() {
     <div className="app-wrapper">
       {toast && <div className="toast-msg">{toast}</div>}
 
-      {/* HEADER: LOGO DI KIRI, HAMBURGER DI KANAN */}
+      {/* HEADER: LOGO & HAMBURGER NAVIGATION */}
       <header className="navbar-luxury" ref={menuRef}>
         <div className="brand-wrapper" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           <div className="brand-icon-lux"><ShoppingBag size={24} /></div>
@@ -639,15 +666,17 @@ function App() {
           </div>
         </div>
 
+        {/* Butang Hamburger Menu Tunggal */}
         <button 
           className="hamburger-btn" 
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Menu Utama"
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          {(pendingOrdersCount > 0 || cart.length > 0 || myUnreadNotifications > 0) && (
+          {/* BILANGAN POPUP MERAH HANYA MUNCUL JIKA ADA NOTIFIKASI BELUM DIBACA */}
+          {totalAlertCount > 0 && (
             <span className="badge-alert-dot">
-              {pendingOrdersCount + cart.length + myUnreadNotifications}
+              {totalAlertCount}
             </span>
           )}
         </button>
@@ -665,10 +694,22 @@ function App() {
               <>
                 <button 
                   className="menu-item-btn"
+                  onClick={() => { 
+                    setMenuOpen(false); 
+                    setShowUserDashboard(true); 
+                    setDashboardTab("notifications"); 
+                    markNotificationsAsRead();
+                  }}
+                >
+                  <div className="item-left"><Bell size={16} /> Notifikasi</div>
+                  {myUnreadNotifications > 0 && <span className="bonus-pill-tag">{myUnreadNotifications}</span>}
+                </button>
+
+                <button 
+                  className="menu-item-btn"
                   onClick={() => { setMenuOpen(false); setShowUserDashboard(true); setDashboardTab("overview"); }}
                 >
                   <div className="item-left"><User size={16} /> Dashboard Pengguna</div>
-                  {myUnreadNotifications > 0 && <span className="bonus-pill-tag">{myUnreadNotifications}</span>}
                 </button>
                 <button 
                   className="menu-item-btn"
@@ -721,7 +762,7 @@ function App() {
               onClick={() => { setMenuOpen(false); setShowAdmin(true); }}
             >
               <div className="item-left"><ShieldAlert size={16} /> Admin Portal</div>
-              {pendingOrdersCount > 0 && <span className="badge-alert-dot" style={{ position: "static" }}>{pendingOrdersCount}</span>}
+              {pendingOrdersCount > 0 && <span className="bonus-pill-tag" style={{ color: "var(--admin-accent)" }}>{pendingOrdersCount}</span>}
             </button>
           </div>
         )}
@@ -1109,7 +1150,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: PRATONTON GAMBAR & TULISAN PENERANGAN (BUKAN KOD) */}
+      {/* MODAL: PRATONTON GAMBAR & TULISAN */}
       {previewProduct && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: "620px" }}>
@@ -1149,7 +1190,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: USER DASHBOARD */}
+      {/* MODAL: USER DASHBOARD DENGAN TAB NOTIFIKASI */}
       {showUserDashboard && currentUser && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: "720px" }}>
@@ -1165,7 +1206,15 @@ function App() {
               <button className={`filter-btn ${dashboardTab === "overview" ? "active" : ""}`} onClick={() => setDashboardTab("overview")}>Overview</button>
               <button className={`filter-btn ${dashboardTab === "wallet" ? "active" : ""}`} onClick={() => setDashboardTab("wallet")}>My Wallet</button>
               <button className={`filter-btn ${dashboardTab === "purchases" ? "active" : ""}`} onClick={() => setDashboardTab("purchases")}>My Purchases ({myOrders.length})</button>
-              <button className={`filter-btn ${dashboardTab === "notifications" ? "active" : ""}`} onClick={() => setDashboardTab("notifications")}>Notifikasi</button>
+              <button 
+                className={`filter-btn ${dashboardTab === "notifications" ? "active" : ""}`} 
+                onClick={() => { 
+                  setDashboardTab("notifications"); 
+                  markNotificationsAsRead();
+                }}
+              >
+                Notifikasi {myUnreadNotifications > 0 && `(${myUnreadNotifications})`}
+              </button>
             </div>
 
             {dashboardTab === "overview" && (
@@ -1275,15 +1324,30 @@ function App() {
               </div>
             )}
 
+            {/* TAB NOTIFIKASI DENGAN BUTANG KOSONGKAN/TANDA DIBACA */}
             {dashboardTab === "notifications" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "300px", overflowY: "auto" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", maxHeight: "320px", overflowY: "auto" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Peti Notifikasi Akaun</span>
+                  <button 
+                    onClick={() => { markNotificationsAsRead(); showToast("Semua notifikasi ditandakan telah dibaca!"); }}
+                    className="btn-action-icon mono" 
+                    style={{ width: "auto", padding: "0.3rem 0.6rem", fontSize: "0.72rem", height: "auto" }}
+                  >
+                    <CheckCheck size={14} /> Tanda Semua Dibaca
+                  </button>
+                </div>
+
                 {notifications.filter(n => n.targetUser === "all" || n.targetUser === currentUser.username).map((n) => (
-                  <div key={n.id} style={{ background: "#020B16", border: "1px solid var(--border-subtle)", padding: "0.75rem", borderRadius: "8px" }}>
+                  <div key={n.id} style={{ background: "#020B16", border: n.read ? "1px solid var(--border-subtle)" : "1px solid var(--emerald)", padding: "0.75rem", borderRadius: "8px", position: "relative" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong style={{ fontSize: "0.85rem", color: "var(--neon-cyan)" }}>{n.title}</strong>
+                      <strong style={{ fontSize: "0.85rem", color: n.read ? "var(--text-secondary)" : "var(--neon-cyan)" }}>
+                        {!n.read && <span style={{ display: "inline-block", width: "7px", height: "7px", borderRadius: "50%", background: "var(--emerald)", marginRight: "6px" }} />}
+                        {n.title}
+                      </strong>
                       <span className="mono" style={{ fontSize: "0.68rem", color: "var(--text-secondary)" }}>{n.date}</span>
                     </div>
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>{n.message}</p>
+                    <p style={{ fontSize: "0.78rem", color: n.read ? "var(--text-muted)" : "var(--text-primary)", marginTop: "0.25rem" }}>{n.message}</p>
                   </div>
                 ))}
               </div>
@@ -1361,7 +1425,7 @@ function App() {
                         <strong style={{ fontSize: "0.85rem" }}>{item.title}</strong>
                         <div className="mono" style={{ fontSize: "0.75rem", color: "var(--emerald)" }}>RM {item.price.toFixed(2)}</div>
                       </div>
-                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
+                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -1462,7 +1526,7 @@ function App() {
               <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "login" ? "2px solid var(--emerald)" : "none", color: authTab === "login" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("login")}>Log Masuk</button>
               <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "register" ? "2px solid var(--emerald)" : "none", color: authTab === "register" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("register")}>Daftar Akaun</button>
             </div>
-            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "#F43F5E", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
+            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "var(--danger)", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
             <form onSubmit={handleAuthSubmit}>
               <div style={{ marginBottom: "0.8rem" }}>
                 <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>USERNAME</label>
@@ -1504,7 +1568,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL ADMIN DASHBOARD (PIN 200200 TERTUTUP TANPA PETUNJUK UI) */}
+      {/* MODAL ADMIN DASHBOARD */}
       {showAdmin && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ borderColor: "var(--admin-accent)", maxWidth: "760px" }}>
@@ -1643,7 +1707,7 @@ function App() {
                             <strong style={{ fontSize: "0.82rem" }}>{p.title}</strong>
                             <span className="mono" style={{ fontSize: "0.72rem", color: "var(--emerald)", marginLeft: "0.5rem" }}>RM {p.price}</span>
                           </div>
-                          <button onClick={() => handleDeleteProduct(p.id, p.title)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
+                          <button onClick={() => handleDeleteProduct(p.id, p.title)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
                             <Trash2 size={15} />
                           </button>
                         </div>
@@ -1669,7 +1733,7 @@ function App() {
                             {pin.status === "AVAILABLE" && (
                               <button onClick={() => copyToClipboard(pin.code, () => showToast("PIN disalin!"))} style={{ background: "none", border: "none", color: "var(--neon-cyan)", cursor: "pointer" }}>Salin</button>
                             )}
-                            <button onClick={() => handleDeletePin(pin.code)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
+                            <button onClick={() => handleDeletePin(pin.code)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer" }}>
                               <Trash2 size={13} />
                             </button>
                           </div>
