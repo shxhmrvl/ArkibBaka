@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import { 
@@ -6,15 +6,15 @@ import {
   ShieldAlert, X, Copy, PlusCircle, Ticket, MessageCircle, 
   Package, Sparkles, Globe, Bot, ArrowRight, Eye, Search, 
   ShoppingCart, Download, Code, Star, Trash2, Check,
-  Send, LifeBuoy, Inbox, Clock, CheckCircle2, AlertTriangle, FileText
+  Send, LifeBuoy, Inbox, Clock, CheckCircle2, Crown, Zap, ShieldCheck, Menu
 } from "lucide-react";
 
-// PIN RAHSIA ADMIN (TIDAK DITAMPILKAN PADA UI)
 const ADMIN_PIN = "200200";
 const SUPPORT_EMAIL = "shhmrvl@gmail.com";
-const WHATSAPP_PHONE = "60183915460";
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent("Salam Admin, saya nak beli PIN Topup BakaHub Market")}`;
+const WHATSAPP_PHONE = "018-3915460";
+const WHATSAPP_LINK = "https://wa.me/60183915460?text=Salam%20Admin,%20saya%20nak%20beli%20PIN%20Topup%20BakaHub%20Market";
 
+// Helper LocalStorage
 const load = (key, fallback) => {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } 
   catch { return fallback; }
@@ -35,7 +35,7 @@ const INITIAL_PRODUCTS = [
     rating: 4.9,
     sales: 142,
     previewImg: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
-    fullWriteup: "Templat jemputan kahwin digital moden dengan susunan fon elegan. Pengunjung boleh mengesahkan kehadiran melalui borang RSVP terus ke spreadsheet/WhatsApp, mendengar lagu pengantin, serta menekan pautan navigasi Waze dan Google Maps secara langsung.",
+    fullWriteup: "Templat jemputan kahwin digital moden dengan susunan fon elegan. Pengunjung boleh mengesahkan kehadiran melalui borang RSVP terus ke spreadsheet/WhatsApp, mendengar lagu pengantin, serta navigasi Waze/Maps.",
     features: ["Responsif Telefon / Desktop", "Audio Latar & RSVP Form", "Countdown & Lokasi Majlis"]
   },
   {
@@ -47,7 +47,7 @@ const INITIAL_PRODUCTS = [
     rating: 5.0,
     sales: 89,
     previewImg: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
-    fullWriteup: "Landing page berprestasi tinggi yang dioptimumkan untuk konversi jualan perisian SaaS. Dilengkapi dengan jadual harga (Pricing Table), testimoni pelanggan, bahagian FAQ akordion, dan reka bentuk gelap (Dark Mode).",
+    fullWriteup: "Landing page berprestasi tinggi yang dioptimumkan untuk konversi jualan perisian SaaS. Dilengkapi dengan jadual harga (Pricing Table), testimoni pelanggan, dan reka bentuk gelap (Dark Mode).",
     features: ["Next.js & Tailwind CSS", "Pricing Table & FAQ", "Formulir Jualan Siap"]
   },
   {
@@ -111,18 +111,6 @@ const INITIAL_PRODUCTS = [
     features: ["Tanpa Iklan Sepenuhnya", "Muat Turun Lagu Offline", "Langkau Tanpa Had"]
   },
   {
-    id: "prm_youtube_prem",
-    category: "account",
-    title: "YouTube Premium + YouTube Music",
-    desc: "Tonton video tanpa iklan, main di latar belakang skrin telefon & akses aplikasi YouTube Music.",
-    price: 9.0,
-    rating: 4.8,
-    sales: 290,
-    previewImg: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
-    fullWriteup: "Akses video bebas iklan di telefon, PC dan Smart TV. Menyokong Picture-in-Picture (PiP) dan mainan latar belakang semasa skrin telefon ditutup.",
-    features: ["Tanpa Gangguan Iklan", "Main Belakang Skrin", "Termasuk YT Music App"]
-  },
-  {
     id: "src_react_boilerplate",
     category: "source",
     title: "React SaaS Full Boilerplate + Auth",
@@ -137,30 +125,35 @@ const INITIAL_PRODUCTS = [
 ];
 
 function App() {
-  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v5", []));
-  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v5", ""));
+  // Pangkalan Data Pengguna
+  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v6", []));
+  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v6", ""));
   const currentUser = usersDb.find((u) => u.username === currentUsername) || null;
 
   // Produk & Kategori
-  const [products, setProducts] = useState(() => load("bakahub_products_v5", INITIAL_PRODUCTS));
+  const [products, setProducts] = useState(() => load("bakahub_products_v6", INITIAL_PRODUCTS));
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // SISTEM PESANAN & PETI MASUK (INBOX & ORDER QUEUE)
-  const [orders, setOrders] = useState(() => load("bakahub_orders_v5", []));
+  // Pesanan & Peti Masuk
+  const [orders, setOrders] = useState(() => load("bakahub_orders_v6", []));
 
   // Troli & Kupon
-  const [cart, setCart] = useState(() => load("bakahub_cart_v5", []));
+  const [cart, setCart] = useState(() => load("bakahub_cart_v6", []));
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
 
   // Baucar PIN
-  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v5", [
+  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v6", [
     { code: "BK5-8888-9999", value: 5, status: "AVAILABLE" },
     { code: "BK10-1111-2222", value: 10, status: "AVAILABLE" },
     { code: "BK50-3333-4444", value: 50, status: "AVAILABLE" }
   ]));
+
+  // Hamburger Menu State
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   // Modals
   const [showAuth, setShowAuth] = useState(false);
@@ -170,8 +163,6 @@ function App() {
   const [showRedeem, setShowRedeem] = useState(false);
   const [inputPin, setInputPin] = useState("");
   const [previewProduct, setPreviewProduct] = useState(null);
-
-  // Peti Masuk Pengguna Modal
   const [showInbox, setShowInbox] = useState(false);
 
   // Tiket Bantuan
@@ -179,16 +170,12 @@ function App() {
   const [ticketForm, setTicketForm] = useState({ name: "", email: "", category: "Masalah Pembelian / Topup", message: "" });
   const [isSendingTicket, setIsSendingTicket] = useState(false);
 
-  // Admin Portal & Fulfillment Queue
+  // Admin Portal
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminTab, setAdminTab] = useState("orders"); // 'orders' | 'products' | 'pins'
-  
-  // State untuk Admin Key-in Mesej bagi Pesanan Tertentu
+  const [adminTab, setAdminTab] = useState("orders");
   const [adminMsgInputs, setAdminMsgInputs] = useState({});
-
-  // Borang Tambah Produk
   const [newProd, setNewProd] = useState({
     title: "", category: "template", desc: "", price: "15",
     previewImg: "", fullWriteup: "", features: "Akses Seumur Hidup, Kemas Kini Percuma"
@@ -197,14 +184,26 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  useEffect(() => save("bakahub_users_v5", usersDb), [usersDb]);
-  useEffect(() => save("bakahub_session_v5", currentUsername), [currentUsername]);
-  useEffect(() => save("bakahub_products_v5", products), [products]);
-  useEffect(() => save("bakahub_orders_v5", orders), [orders]);
-  useEffect(() => save("bakahub_cart_v5", cart), [cart]);
-  useEffect(() => save("bakahub_pins_v5", pinDb), [pinDb]);
+  // Sync LocalStorage
+  useEffect(() => save("bakahub_users_v6", usersDb), [usersDb]);
+  useEffect(() => save("bakahub_session_v6", currentUsername), [currentUsername]);
+  useEffect(() => save("bakahub_products_v6", products), [products]);
+  useEffect(() => save("bakahub_orders_v6", orders), [orders]);
+  useEffect(() => save("bakahub_cart_v6", cart), [cart]);
+  useEffect(() => save("bakahub_pins_v6", pinDb), [pinDb]);
 
-  // Auth: Daftar / Login
+  // Click outside to close Hamburger Dropdown
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    if (menuOpen) document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [menuOpen]);
+
+  // Auth: Daftar / Login (TANPA BONUS PENDAFTARAN)
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const u = authForm.user.trim();
@@ -215,12 +214,19 @@ function App() {
       if (usersDb.some((x) => x.username.toLowerCase() === u.toLowerCase())) {
         return setAuthForm({ ...authForm, err: "Username sudah wujud!" });
       }
-      const newUser = { username: u, password: p, balance: 10.0 }; // Bonus pendaftaran RM10
+      // Dilarang sebarang bonus pendaftaran (balance: 0.0)
+      const newUser = { 
+        username: u, 
+        password: p, 
+        balance: 0.0, 
+        hasClaimedFirstRechargeBonus: false,
+        recharges: []
+      };
       const updated = [...usersDb, newUser];
       setUsersDb(updated);
       setCurrentUsername(u);
       setShowAuth(false);
-      showToast(`🎉 Selamat datang! Kredit percuma RM 10.00 diberikan.`);
+      showToast(`🎉 Akaun berjaya didaftarkan. Selamat datang, ${u}!`);
     } else {
       const found = usersDb.find((x) => x.username.toLowerCase() === u.toLowerCase() && x.password === p);
       if (!found) return setAuthForm({ ...authForm, err: "Username atau Password salah!" });
@@ -233,6 +239,7 @@ function App() {
 
   const handleLogout = () => {
     setCurrentUsername("");
+    setMenuOpen(false);
     showToast("Anda telah log keluar.");
   };
 
@@ -251,7 +258,7 @@ function App() {
     fn();
   };
 
-  // Tebus PIN
+  // LOGIK FIRST TIME RECHARGE BONUS SISTEM
   const handleRedeem = (e) => {
     e.preventDefault();
     requireUser(() => {
@@ -260,11 +267,44 @@ function App() {
       if (!target) return showToast("❌ Kod PIN tidak sah!");
       if (target.status === "USED") return showToast(`❌ PIN telah ditebus oleh ${target.usedBy}!`);
 
-      updateUserBalance({ balance: +(currentUser.balance + target.value).toFixed(2) });
+      const isFirstRecharge = !currentUser.hasClaimedFirstRechargeBonus;
+      let bonusEarned = 0;
+
+      if (isFirstRecharge) {
+        if (target.value === 5) bonusEarned = 1;
+        else if (target.value === 10) bonusEarned = 2;
+        else if (target.value === 50) bonusEarned = 5;
+      }
+
+      const totalCredited = +(target.value + bonusEarned).toFixed(2);
+      const newBalance = +(currentUser.balance + totalCredited).toFixed(2);
+
+      const rechargeRecord = {
+        txId: `TX-RCG-${Date.now()}`,
+        pinCode: target.code,
+        pinValue: target.value,
+        bonusGiven: bonusEarned,
+        totalCredited,
+        date: new Date().toLocaleString("ms-MY")
+      };
+
+      // Kemas kini data pengguna secara transaction-safe
+      updateUserBalance({
+        balance: newBalance,
+        hasClaimedFirstRechargeBonus: currentUser.hasClaimedFirstRechargeBonus || (isFirstRecharge && bonusEarned > 0),
+        recharges: [rechargeRecord, ...(currentUser.recharges || [])]
+      });
+
+      // Tandakan PIN sebagai digunakan
       setPinDb(pinDb.map((p) => p.code.toUpperCase() === code ? { ...p, status: "USED", usedBy: currentUser.username } : p));
       setInputPin("");
       setShowRedeem(false);
-      showToast(`🎉 +RM ${target.value}.00 dimasukkan ke baki dompet!`);
+
+      if (bonusEarned > 0) {
+        showToast(`🎉 RECHARGE PERTAMA: Duit RM ${target.value} + Bonus RM ${bonusEarned} dimasukkan! (Jumlah: RM ${totalCredited})`);
+      } else {
+        showToast(`✅ Top-up RM ${target.value}.00 berjaya dimasukkan ke baki dompet.`);
+      }
     });
   };
 
@@ -293,17 +333,15 @@ function App() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.price, 0);
   const cartTotal = +(cartSubtotal * (1 - discountPercent / 100)).toFixed(2);
 
-  // ALIRAN PEMBELIAN BARU: MASUK STATUS "PENDING" DAHULU
+  // Checkout Pesanan
   const executeCheckout = (itemsToBuy, totalCost) => {
     requireUser(() => {
       if (currentUser.balance < totalCost) {
-        return showToast("Baki tidak cukup! Sila top-up baucar PIN.");
+        return showToast("Baki tidak cukup! Sila masukkan PIN baucar.");
       }
 
-      // Tolak baki RM serta-merta
       updateUserBalance({ balance: +(currentUser.balance - totalCost).toFixed(2) });
 
-      // Cipta Pesanan dengan Status: PENDING (Belum dihantar oleh Admin)
       const newOrders = itemsToBuy.map((item) => ({
         id: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
         username: currentUser.username,
@@ -311,27 +349,25 @@ function App() {
         productTitle: item.title,
         category: item.category,
         price: item.price,
-        status: "PENDING", // PENDING PENGESAHAN ADMIN
-        adminMessage: null, // Admin akan key-in mesej ini
+        status: "PENDING",
+        adminMessage: null,
         createdAt: new Date().toLocaleString("ms-MY"),
         deliveredAt: null
       }));
 
       const updatedOrders = [...newOrders, ...orders];
       setOrders(updatedOrders);
-      save("bakahub_orders_v5", updatedOrders);
-
       setCart(cart.filter((c) => !itemsToBuy.some((b) => b.id === c.id)));
       setShowCartDrawer(false);
-      showToast(`⏳ Pesanan berjaya dihantar ke Admin! Sila semak status di Peti Masuk.`);
+      showToast(`⏳ Pesanan dihantar ke Admin! Semak status di Peti Masuk.`);
     });
   };
 
-  // FUNGSI ADMIN: HANTAR MESEJ / KREDENSIAL KE PETI MASUK PENGGUNA
+  // Admin Fulfillment
   const handleFulfillOrder = (orderId) => {
     const messageToSend = adminMsgInputs[orderId];
     if (!messageToSend || !messageToSend.trim()) {
-      return showToast("Sila taipkan mesej atau kredensial sebelum menghantar!");
+      return showToast("Sila taipkan mesej atau pautan sebelum menghantar!");
     }
 
     const updated = orders.map((o) => {
@@ -347,19 +383,12 @@ function App() {
     });
 
     setOrders(updated);
-    save("bakahub_orders_v5", updated);
-
-    // Kosongkan input mesej pesanan berkenaan
     setAdminMsgInputs({ ...adminMsgInputs, [orderId]: "" });
     showToast("🚀 Mesej & Butiran Berjaya Dihantar ke Peti Masuk Pengguna!");
   };
 
-  // Bilangan pesanan Pending untuk notifikasi Admin
   const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
-
-  // Bilangan mesej dalam Peti Masuk pengguna semasa
   const myInboxOrders = orders.filter((o) => currentUser && o.username === currentUser.username);
-  const myDeliveredCount = myInboxOrders.filter((o) => o.status === "DELIVERED").length;
 
   // Tiket Bantuan ke shhmrvl@gmail.com
   const handleSendTicket = async (e) => {
@@ -393,7 +422,7 @@ function App() {
     }
   };
 
-  // Admin Tambah & Padam Produk
+  // Admin Produk & PIN
   const handleAddProduct = (e) => {
     e.preventDefault();
     const pVal = parseFloat(newProd.price);
@@ -412,35 +441,26 @@ function App() {
       features: newProd.features.split(",").map(f => f.trim()).filter(Boolean)
     };
 
-    const updated = [item, ...products];
-    setProducts(updated);
-    save("bakahub_products_v5", updated);
+    setProducts([item, ...products]);
     setNewProd({ title: "", category: "template", desc: "", price: "15", previewImg: "", fullWriteup: "", features: "Akses Seumur Hidup, Kemas Kini Percuma" });
     showToast("✅ Produk baharu berjaya diterbitkan!");
   };
 
   const handleDeleteProduct = (id, title) => {
     if (confirm(`Padam "${title}"?`)) {
-      const updated = products.filter(p => p.id !== id);
-      setProducts(updated);
-      save("bakahub_products_v5", updated);
+      setProducts(products.filter(p => p.id !== id));
       showToast(`Produk "${title}" telah dipadam.`);
     }
   };
 
-  // Admin PIN generator
   const handleGeneratePin = (val) => {
     const code = genPinWithVal(val);
-    const updated = [{ code, value: val, status: "AVAILABLE" }, ...pinDb];
-    setPinDb(updated);
-    save("bakahub_pins_v5", updated);
+    setPinDb([{ code, value: val, status: "AVAILABLE" }, ...pinDb]);
     showToast(`PIN RM ${val} Dijana: ${code}`);
   };
 
   const handleDeletePin = (code) => {
-    const updated = pinDb.filter(p => p.code !== code);
-    setPinDb(updated);
-    save("bakahub_pins_v5", updated);
+    setPinDb(pinDb.filter(p => p.code !== code));
     showToast(`PIN ${code} dipadam.`);
   };
 
@@ -452,154 +472,341 @@ function App() {
   });
 
   return (
-    <div className="app-container">
+    <div className="app-wrapper">
       {toast && <div className="toast-msg">{toast}</div>}
 
-      {/* Navbar Responsif */}
-      <nav className="navbar">
-        <div className="brand">
-          <div className="brand-icon"><ShoppingBag size={22} /></div>
-          <div>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 800 }}>BakaHub Market</h2>
-            <p className="mono" style={{ fontSize: "0.7rem", color: "var(--cyan)" }}>
-              {currentUser ? `Akaun: ${currentUser.username}` : "Digital Software & Templates"}
-            </p>
+      {/* =========================================================
+          2. HEADER REDESIGN: LOGO (LEFT) & HAMBURGER (RIGHT) ONLY
+          ========================================================= */}
+      <header className="navbar-luxury" ref={menuRef}>
+        <div className="brand-wrapper">
+          <div className="brand-icon-lux"><ShoppingBag size={24} /></div>
+          <div className="brand-meta">
+            <h1>BakaHub Market</h1>
+            <p className="mono">Digital Software & Templates</p>
           </div>
         </div>
 
-        <div className="nav-actions">
-          <button className="btn-pill btn-user mono" onClick={() => setShowTicketModal(true)}>
-            <LifeBuoy size={14} /> Tiket Bantuan
-          </button>
-
-          {currentUser ? (
-            <>
-              <button className="btn-pill btn-user mono">
-                <User size={14} /> {currentUser.username}
-              </button>
-
-              {/* BUTANG PETI MASUK / INBOX PENGGUNA */}
-              <button className="btn-pill btn-inbox mono" onClick={() => setShowInbox(true)}>
-                <Inbox size={14} /> Peti Masuk
-                {myInboxOrders.length > 0 && (
-                  <span className="badge-alert" style={{ background: myDeliveredCount > 0 ? "var(--green)" : "var(--gold)" }}>
-                    {myInboxOrders.length}
-                  </span>
-                )}
-              </button>
-
-              <button className="btn-pill btn-green mono" onClick={() => setShowRedeem(true)}>
-                <KeyRound size={14} /> Tebus PIN
-              </button>
-              <button className="btn-pill btn-user mono" onClick={handleLogout} title="Log Keluar">
-                <LogOut size={14} />
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="btn-pill btn-user mono" onClick={() => { setAuthTab("login"); setShowAuth(true); }}>
-                <LogIn size={14} /> Log Masuk
-              </button>
-              <button className="btn-pill btn-green mono" onClick={() => { setAuthTab("register"); setShowAuth(true); }}>
-                <UserPlus size={14} /> Daftar (+RM10)
-              </button>
-            </>
+        {/* Butang Hamburger Tunggal */}
+        <button 
+          className="hamburger-btn" 
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Buka Menu Navigasi"
+        >
+          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          {(pendingOrdersCount > 0 || cart.length > 0) && (
+            <span className="badge-alert-dot">
+              {pendingOrdersCount + cart.length}
+            </span>
           )}
+        </button>
 
-          <button className="btn-pill btn-cart-nav mono" onClick={() => setShowCartDrawer(true)}>
-            <ShoppingCart size={15} />
-            <span>Troli</span>
-            {cart.length > 0 && <span className="cart-count-badge">{cart.length}</span>}
-          </button>
+        {/* Dropdown Panel Navigasi Hamburger */}
+        {menuOpen && (
+          <div className="hamburger-dropdown">
+            <button 
+              className="menu-item-btn"
+              onClick={() => { setMenuOpen(false); setShowTicketModal(true); }}
+            >
+              <div className="item-left"><LifeBuoy size={16} /> Tiket Bantuan</div>
+            </button>
 
-          {/* Akses Admin Tanpa Memaparkan PIN */}
-          <button className="btn-pill btn-admin mono" onClick={() => setShowAdmin(true)} title="Admin Access">
-            <ShieldAlert size={14} /> Admin
-            {pendingOrdersCount > 0 && (
-              <span className="badge-alert">{pendingOrdersCount}</span>
+            {currentUser ? (
+              <>
+                <button 
+                  className="menu-item-btn"
+                  onClick={() => { setMenuOpen(false); setShowInbox(true); }}
+                >
+                  <div className="item-left"><Inbox size={16} /> Peti Masuk</div>
+                  {myInboxOrders.length > 0 && <span className="bonus-pill-tag">{myInboxOrders.length}</span>}
+                </button>
+                <button 
+                  className="menu-item-btn"
+                  onClick={() => { setMenuOpen(false); setShowRedeem(true); }}
+                >
+                  <div className="item-left"><KeyRound size={16} /> Tebus PIN</div>
+                </button>
+                <button 
+                  className="menu-item-btn"
+                  onClick={handleLogout}
+                  style={{ color: "#F43F5E" }}
+                >
+                  <div className="item-left"><LogOut size={16} /> Log Keluar ({currentUser.username})</div>
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  className="menu-item-btn"
+                  onClick={() => { setMenuOpen(false); setAuthTab("login"); setShowAuth(true); }}
+                >
+                  <div className="item-left"><LogIn size={16} /> Log Masuk</div>
+                </button>
+                <button 
+                  className="menu-item-btn accent-register"
+                  onClick={() => { setMenuOpen(false); setAuthTab("register"); setShowAuth(true); }}
+                >
+                  <div className="item-left"><UserPlus size={16} /> Daftar Akaun</div>
+                </button>
+              </>
             )}
-          </button>
-        </div>
-      </nav>
 
-      {/* Hero Showcase Header */}
-      <section className="hero-box">
-        <div className="hero-left">
-          <div className="badge-gradient">
-            <Sparkles size={13} /> Gedung Templat & Perisian Digital #1
+            <button 
+              className="menu-item-btn accent-cart"
+              onClick={() => { setMenuOpen(false); setShowCartDrawer(true); }}
+            >
+              <div className="item-left"><ShoppingCart size={16} /> Troli</div>
+              {cart.length > 0 && <span className="bonus-pill-tag" style={{ color: "var(--neon-cyan)" }}>{cart.length}</span>}
+            </button>
+
+            <button 
+              className="menu-item-btn accent-admin"
+              onClick={() => { setMenuOpen(false); setShowAdmin(true); }}
+            >
+              <div className="item-left"><ShieldAlert size={16} /> Admin Portal</div>
+              {pendingOrdersCount > 0 && <span className="badge-alert-dot" style={{ position: "static" }}>{pendingOrdersCount}</span>}
+            </button>
           </div>
-          <h1 className="hero-title">
-            Bina Projek Pantas dengan <span>Templat & Akaun Premium</span>
-          </h1>
-          <p className="hero-desc">
-            Dapatkan templat kad kahwin interaktif, kod portfolio developer, serta langganan ChatGPT Plus, Netflix 4K dan Spotify pada harga komuniti paling berbaloi.
+        )}
+      </header>
+
+      {/* =========================================================
+          3 & 4. HERO SECTION – HEADLINE & 2-COLUMN RESPONSIVE LAYOUT
+          ========================================================= */}
+      <section className="hero-container">
+        <div className="hero-text-col">
+          <div className="hero-label-tag">
+            <span>✦ YOUR DIGITAL MARKETPLACE</span>
+          </div>
+          <h2 className="hero-main-title">
+            Segalanya Untuk <span className="gradient-teal">Projek Digital</span> Anda
+          </h2>
+          <p className="hero-subtext">
+            Templat eksklusif, perisian digital dan akaun premium untuk membantu anda berkarya dengan lebih pantas, mudah dan profesional.
           </p>
         </div>
 
-        <div style={{ background: "rgba(6, 10, 20, 0.8)", border: "1px solid var(--border-ui)", padding: "1rem", borderRadius: "12px", textAlign: "center", width: "100%", maxWidth: "260px" }}>
-          <span className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Beli PIN / Bantuan Admin</span>
-          <div style={{ margin: "0.5rem 0" }}>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono" style={{ width: "100%", justifyContent: "center" }}>
-              <MessageCircle size={15} /> WhatsApp (018-3915460)
-            </a>
+        {/* Visual Ilustrasi 2-Column Desktop */}
+        <div className="hero-visual-board">
+          <div className="floating-card-mock anim-1">
+            <div className="mock-icon-box" style={{ background: "rgba(0, 217, 245, 0.15)", color: "var(--neon-cyan)" }}>
+              <Globe size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: "0.95rem" }}>Templat Kad Kahwin & Bisnes</strong>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Siap RSVP, muzik latar & Google Maps</p>
+            </div>
           </div>
-          <small className="mono" style={{ fontSize: "0.68rem", color: "var(--green)" }}>● Khidmat Sokongan Pantas</small>
+
+          <div className="floating-card-mock anim-2">
+            <div className="mock-icon-box" style={{ background: "rgba(245, 158, 11, 0.15)", color: "var(--admin-accent)" }}>
+              <Bot size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: "0.95rem" }}>Akaun Premium & AI Berlesen</strong>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>ChatGPT Plus, Netflix 4K, Spotify</p>
+            </div>
+          </div>
+
+          <div className="floating-card-mock anim-3">
+            <div className="mock-icon-box" style={{ background: "rgba(0, 212, 154, 0.15)", color: "var(--emerald)" }}>
+              <Code size={22} />
+            </div>
+            <div>
+              <strong style={{ fontSize: "0.95rem" }}>Kod Sumber & UI Kit Moden</strong>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>React, Next.js & Tailwind sedia guna</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Ringkasan Baki Dompet */}
+      {/* =========================================================
+          5. BENEFIT SECTION (4 KAD KELEBIHAN)
+          ========================================================= */}
+      <section className="section-block">
+        <div className="section-head-center">
+          <h3 className="section-title">Kenapa Pilih BakaHub Market?</h3>
+          <p className="section-subtitle">Segala keperluan digital anda dalam satu platform.</p>
+        </div>
+
+        <div className="benefit-grid">
+          <div className="benefit-card-lux">
+            <div className="benefit-icon-wrap"><Code size={20} /></div>
+            <h3>Templat Premium</h3>
+            <p>Reka bentuk digital berkualiti tinggi dan mudah diubah suai mengikut keperluan anda.</p>
+          </div>
+
+          <div className="benefit-card-lux">
+            <div className="benefit-icon-wrap"><Crown size={20} /></div>
+            <h3>Akaun Premium</h3>
+            <p>Pilihan langganan digital popular dengan jaminan keselamatan dan sokongan berterusan.</p>
+          </div>
+
+          <div className="benefit-card-lux">
+            <div className="benefit-icon-wrap"><Zap size={20} /></div>
+            <h3>Akses Pantas</h3>
+            <p>Proses pembelian mudah dengan penyerahan pantas terus ke Peti Masuk akaun anda.</p>
+          </div>
+
+          <div className="benefit-card-lux">
+            <div className="benefit-icon-wrap"><ShieldCheck size={20} /></div>
+            <h3>Sokongan Dipercayai</h3>
+            <p>Bantuan khidmat sokongan pantas melalui WhatsApp dan tiket bantuan bila-bila masa.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          6. FIRST TIME RECHARGE BONUS SYSTEM (PROMOSI UTAMA)
+          ========================================================= */}
+      <section className="recharge-promo-block">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div className="promo-tag-badge">
+              <Sparkles size={13} /> ONE-TIME BONUS – NEW USERS ONLY
+            </div>
+            <h3 style={{ fontSize: "1.65rem", fontWeight: 800 }}>FIRST TIME RECHARGE BONUS</h3>
+            <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginTop: "0.3rem" }}>
+              Nikmati bonus istimewa untuk tambah nilai pertama anda!
+            </p>
+          </div>
+
+          {currentUser && (
+            <div className="mono" style={{ fontSize: "0.82rem", background: "rgba(0,0,0,0.4)", padding: "0.5rem 1rem", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
+              Status Akaun: {currentUser.hasClaimedFirstRechargeBonus ? (
+                <strong style={{ color: "var(--emerald)" }}>First Recharge Bonus Claimed ✓</strong>
+              ) : (
+                <strong style={{ color: "var(--neon-cyan)" }}>Layak Menerima Bonus Promosi</strong>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="recharge-grid">
+          <div className="recharge-card-lux">
+            <div>
+              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM5</span>
+              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag">BONUS +RM1</span></div>
+            </div>
+            <div>
+              <div className="mono total-credit-val">TOTAL RM6</div>
+              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Kredit Diterima</small>
+            </div>
+          </div>
+
+          <div className="recharge-card-lux" style={{ borderColor: "rgba(0, 217, 245, 0.4)" }}>
+            <div>
+              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM10</span>
+              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag" style={{ borderColor: "var(--neon-cyan)", color: "var(--neon-cyan)" }}>BONUS +RM2</span></div>
+            </div>
+            <div>
+              <div className="mono total-credit-val" style={{ color: "var(--neon-cyan)" }}>TOTAL RM12</div>
+              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Pilihan Paling Popular</small>
+            </div>
+          </div>
+
+          <div className="recharge-card-lux" style={{ borderColor: "rgba(245, 158, 11, 0.4)" }}>
+            <div>
+              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM50</span>
+              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag" style={{ borderColor: "var(--admin-accent)", color: "var(--admin-accent)" }}>BONUS +RM5</span></div>
+            </div>
+            <div>
+              <div className="mono total-credit-val" style={{ color: "var(--admin-accent)" }}>TOTAL RM55</div>
+              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Nilai Maksimum</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          7. WHATSAPP SUPPORT SECTION
+          ========================================================= */}
+      <section className="whatsapp-support-box">
+        <div className="wa-left-meta">
+          <span className="wa-label-tag">BELI PIN / BANTUAN ADMIN</span>
+          <h3 style={{ fontSize: "1.7rem", fontWeight: 800, margin: "0.3rem 0" }}>Perlukan Bantuan?</h3>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            Hubungi admin kami untuk pertanyaan, pembelian PIN dan bantuan berkaitan produk digital.
+          </p>
+        </div>
+
+        <div style={{ textAlign: "center" }}>
+          <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="wa-btn-pill">
+            <MessageCircle size={20} /> WhatsApp Admin – 018-3915460
+          </a>
+          <p style={{ fontSize: "0.75rem", color: "var(--emerald)", marginTop: "0.6rem", fontWeight: 600 }}>
+            ● Khidmat Sokongan Pantas
+          </p>
+        </div>
+      </section>
+
+      {/* =========================================================
+          STATUS DOMPET PENGGUNA
+          ========================================================= */}
       <section className="wallet-card-grid">
         <div className="glass-card">
-          <span className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
-            Baki Dompet Digital
+          <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 700 }}>
+            Baki Dompet Anda
           </span>
-          <div className="mono" style={{ fontSize: "1.5rem", fontWeight: 800, color: "#fff", marginTop: "0.2rem" }}>
+          <div className="mono" style={{ fontSize: "1.6rem", fontWeight: 800, color: "#fff", marginTop: "0.2rem" }}>
             {currentUser ? `RM ${currentUser.balance.toFixed(2)}` : "Sila Log Masuk"}
           </div>
-          <div style={{ display: "flex", gap: "0.45rem", marginTop: "0.75rem", flexWrap: "wrap" }}>
-            <button className="btn-pill btn-green mono" onClick={() => requireUser(() => setShowRedeem(true))}>
-              <KeyRound size={13} /> Masukkan PIN
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.8rem", flexWrap: "wrap" }}>
+            <button className="btn-buy-now mono" onClick={() => requireUser(() => setShowRedeem(true))}>
+              <KeyRound size={14} /> Tebus Baucar PIN
             </button>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono">
-              Beli PIN
-            </a>
+            <button className="btn-action-icon mono" style={{ width: "auto", padding: "0 0.8rem" }} onClick={() => setShowTicketModal(true)}>
+              Tiket Bantuan
+            </button>
           </div>
         </div>
 
         <div className="glass-card">
-          <span className="mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
+          <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 700 }}>
             Pesanan Di Peti Masuk
           </span>
-          <div className="mono" style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--cyan)", marginTop: "0.2rem" }}>
-            {currentUser ? `${myInboxOrders.length} Pesanan` : "--"}
+          <div className="mono" style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--neon-cyan)", marginTop: "0.2rem" }}>
+            {currentUser ? `${myInboxOrders.length} Item` : "--"}
           </div>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.4rem", display: "block" }}>
-            {currentUser && myInboxOrders.some(o => o.status === "PENDING") 
-              ? "⏳ Terdapat pesanan sedang diproses Admin." 
-              : "Semua pesanan selesai boleh disemak di Peti Masuk."}
+          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.4rem", display: "block" }}>
+            Semak fail templat, kod sumber dan mesej penyerahan admin di Peti Masuk.
           </span>
         </div>
       </section>
 
-      {/* Kategori Tabs & Carian */}
+      {/* =========================================================
+          KATALOG PRODUK & PENAPIS (MOBILE OPTIMIZED)
+          ========================================================= */}
       <div className="toolbar-row">
         <div className="filter-group mono">
-          <button className={`filter-btn ${activeCategory === "all" ? "active" : ""}`} onClick={() => setActiveCategory("all")}>
+          <button 
+            className={`filter-btn ${activeCategory === "all" ? "active" : ""}`}
+            onClick={() => setActiveCategory("all")}
+          >
             Semua ({products.length})
           </button>
-          <button className={`filter-btn ${activeCategory === "template" ? "active" : ""}`} onClick={() => setActiveCategory("template")}>
+          <button 
+            className={`filter-btn ${activeCategory === "template" ? "active" : ""}`}
+            onClick={() => setActiveCategory("template")}
+          >
             <Globe size={14} /> Templat Laman Web
           </button>
-          <button className={`filter-btn ${activeCategory === "account" ? "active" : ""}`} onClick={() => setActiveCategory("account")}>
+          <button 
+            className={`filter-btn ${activeCategory === "account" ? "active" : ""}`}
+            onClick={() => setActiveCategory("account")}
+          >
             <Bot size={14} /> Akaun & AI Premium
           </button>
-          <button className={`filter-btn ${activeCategory === "source" ? "active" : ""}`} onClick={() => setActiveCategory("source")}>
+          <button 
+            className={`filter-btn ${activeCategory === "source" ? "active" : ""}`}
+            onClick={() => setActiveCategory("source")}
+          >
             <Code size={14} /> Kod Sumber / UI Kit
           </button>
         </div>
 
         <div className="search-input-box">
-          <Search size={15} color="var(--text-muted)" />
+          <Search size={15} color="var(--text-secondary)" />
           <input 
             type="text" 
             placeholder="Cari templat atau akaun..." 
@@ -609,7 +816,7 @@ function App() {
         </div>
       </div>
 
-      {/* Grid Kad Produk */}
+      {/* Grid Produk */}
       <section className="product-grid">
         {filteredProducts.map((p) => (
           <div key={p.id} className="prod-card">
@@ -618,8 +825,8 @@ function App() {
                 <span className={`prod-tag tag-${p.category}`}>
                   {p.category === "template" ? "Website Template" : p.category === "account" ? "Akaun Premium" : "Source Code"}
                 </span>
-                <span className="mono" style={{ fontSize: "0.72rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: "0.2rem" }}>
-                  <Star size={11} fill="var(--gold)" /> {p.rating || 5.0}
+                <span className="mono" style={{ fontSize: "0.72rem", color: "var(--admin-accent)", display: "flex", alignItems: "center", gap: "0.2rem" }}>
+                  <Star size={11} fill="var(--admin-accent)" /> {p.rating || 5.0}
                 </span>
               </div>
 
@@ -630,7 +837,7 @@ function App() {
                 <div className="prod-features-list mono">
                   {p.features.map((f, i) => (
                     <span key={i} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                      <Check size={12} color="var(--green)" /> {f}
+                      <Check size={12} color="var(--emerald)" /> {f}
                     </span>
                   ))}
                 </div>
@@ -667,71 +874,63 @@ function App() {
         ))}
       </section>
 
+      {/* =========================================================
+          MODALS & SYSTEM OVERLAYS (FUNGSI ASAL KEKAL SEPENUHNYA)
+          ========================================================= */}
+
       {/* MODAL PETI MASUK PENGGUNA (INBOX & STATUS PESANAN) */}
       {showInbox && currentUser && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "620px" }}>
+          <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-              <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--cyan)" }}>
-                <Inbox size={20} /> Peti Masuk & Penghantaran Produk
+              <h3 style={{ fontSize: "1.15rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--neon-cyan)" }}>
+                <Inbox size={20} /> Peti Masuk Penghantaran
               </h3>
               <button onClick={() => setShowInbox(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
             {myInboxOrders.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+              <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
                 <Package size={36} style={{ margin: "0 auto 0.5rem auto", opacity: 0.4 }} />
                 <p>Tiada pesanan di peti masuk anda.</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
                 {myInboxOrders.map((ord) => (
-                  <div key={ord.id} className={`inbox-card ${ord.status === "DELIVERED" ? "delivered" : "pending"}`}>
+                  <div key={ord.id} style={{ background: "#060A14", border: "1px solid var(--border-subtle)", borderRadius: "12px", padding: "1rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <strong style={{ fontSize: "0.95rem", color: "#fff" }}>{ord.productTitle}</strong>
-                        <div className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                        <div className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
                           No. Pesanan: {ord.id} • RM {ord.price.toFixed(2)}
                         </div>
                       </div>
-                      <span className={`badge-status ${ord.status === "DELIVERED" ? "badge-avail" : "badge-pending"}`}>
-                        {ord.status === "DELIVERED" ? "✅ SELESAI" : "⏳ DALAM PENGESAHAN ADMIN"}
+                      <span className="mono" style={{ fontSize: "0.7rem", padding: "0.2rem 0.6rem", borderRadius: "6px", background: ord.status === "DELIVERED" ? "rgba(0, 212, 154, 0.15)" : "rgba(245, 158, 11, 0.15)", color: ord.status === "DELIVERED" ? "var(--emerald)" : "var(--admin-accent)" }}>
+                        {ord.status === "DELIVERED" ? "✅ SELESAI" : "⏳ MENUNGGU PENGESAHAN"}
                       </span>
                     </div>
 
-                    {/* JIKA STATUS: PENDING */}
                     {ord.status === "PENDING" && (
-                      <div style={{ marginTop: "0.8rem", background: "rgba(245, 158, 11, 0.08)", border: "1px dashed rgba(245, 158, 11, 0.35)", padding: "0.75rem", borderRadius: "8px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "var(--gold)", fontSize: "0.78rem", fontWeight: 700 }}>
-                          <Clock size={14} /> Pesanan Sedang Diproses
-                        </div>
-                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.25rem" }}>
-                          Admin telah menerima notifikasi pembelian anda. Kredensial log masuk, pautan muat turun, atau kunci lesen akan dihantar ke sini sebentar lagi.
-                        </p>
-                      </div>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "0.5rem", background: "rgba(245, 158, 11, 0.06)", padding: "0.6rem", borderRadius: "8px" }}>
+                        Pesanan telah diterima. Admin sedang memproses kredensial atau pautan fail untuk anda sebentar lagi.
+                      </p>
                     )}
 
-                    {/* JIKA STATUS: DELIVERED (ADMIN DAH HANTAR MESEJ) */}
                     {ord.status === "DELIVERED" && ord.adminMessage && (
-                      <div className="admin-message-payload">
-                        <div className="admin-msg-title">
-                          <CheckCircle2 size={15} /> Mesej & Butiran Penghantaran Dari Admin:
+                      <div style={{ background: "rgba(0, 217, 245, 0.06)", border: "1px solid var(--neon-cyan)", borderRadius: "8px", padding: "0.75rem", marginTop: "0.6rem" }}>
+                        <div style={{ fontSize: "0.75rem", color: "var(--neon-cyan)", fontWeight: 700, marginBottom: "0.25rem" }}>
+                          Mesej Butiran Dari Admin:
                         </div>
-                        <div className="admin-msg-body mono">
+                        <div className="mono" style={{ fontSize: "0.82rem", color: "#F8FAFC", whiteSpace: "pre-wrap" }}>
                           {ord.adminMessage}
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.6rem", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.5rem" }}>
-                          <small className="mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
-                            Dihantar pada: {ord.deliveredAt}
-                          </small>
-                          <button 
-                            onClick={() => { navigator.clipboard.writeText(ord.adminMessage); showToast("Butiran disalin!"); }}
-                            className="btn-pill btn-cyan mono"
-                            style={{ fontSize: "0.7rem", padding: "0.3rem 0.6rem" }}
-                          >
-                            <Copy size={12} /> Salin Butiran
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => { navigator.clipboard.writeText(ord.adminMessage); showToast("Butiran disalin!"); }}
+                          className="btn-buy-now mono"
+                          style={{ fontSize: "0.7rem", padding: "0.3rem 0.6rem", marginTop: "0.5rem" }}
+                        >
+                          <Copy size={12} /> Salin Butiran
+                        </button>
                       </div>
                     )}
                   </div>
@@ -742,30 +941,30 @@ function App() {
         </div>
       )}
 
-      {/* MODAL PRATONTON (GAMBAR & TULISAN) */}
+      {/* MODAL PRATONTON GAMBAR & PENERANGAN PENUH */}
       {previewProduct && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "620px" }}>
+          <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
-              <h3 style={{ fontSize: "1.05rem", fontWeight: 800 }}>{previewProduct.title}</h3>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>{previewProduct.title}</h3>
               <button onClick={() => setPreviewProduct(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
-            <div style={{ width: "100%", maxHeight: "240px", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border-ui)", marginBottom: "1rem", background: "#060913" }}>
+            <div style={{ width: "100%", maxHeight: "240px", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border-subtle)", marginBottom: "1rem" }}>
               <img 
-                src={previewProduct.previewImg || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80"} 
+                src={previewProduct.previewImg} 
                 alt={previewProduct.title}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
             </div>
 
-            <div style={{ background: "#060913", border: "1px solid var(--border-ui)", borderRadius: "10px", padding: "1rem", marginBottom: "1rem" }}>
-              <h4 style={{ color: "var(--cyan)", fontSize: "0.95rem", marginBottom: "0.4rem" }}>Penerangan Penuh:</h4>
-              <p style={{ fontSize: "0.84rem", color: "var(--text-muted)", lineHeight: 1.6 }}>{previewProduct.fullWriteup || previewProduct.desc}</p>
+            <div style={{ background: "#020B16", border: "1px solid var(--border-subtle)", borderRadius: "10px", padding: "1rem", marginBottom: "1rem" }}>
+              <h4 style={{ color: "var(--neon-cyan)", fontSize: "0.95rem", marginBottom: "0.4rem" }}>Penerangan Penuh:</h4>
+              <p style={{ fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{previewProduct.fullWriteup || previewProduct.desc}</p>
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span className="mono" style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--green)" }}>
+              <span className="mono" style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--emerald)" }}>
                 RM {previewProduct.price.toFixed(2)}
               </span>
               <button 
@@ -782,29 +981,29 @@ function App() {
         </div>
       )}
 
-      {/* MODAL TROLI (SHOPPING CART) */}
+      {/* MODAL TROLI BELI-BELAH */}
       {showCartDrawer && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                <ShoppingCart size={18} color="var(--cyan)" /> Troli Pembelian ({cart.length})
+                <ShoppingCart size={18} color="var(--neon-cyan)" /> Troli Pembelian ({cart.length})
               </h3>
               <button onClick={() => setShowCartDrawer(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
             {cart.length === 0 ? (
-              <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "1.5rem" }}>Troli anda masih kosong.</p>
+              <p style={{ textAlign: "center", color: "var(--text-secondary)", padding: "1.5rem" }}>Troli anda masih kosong.</p>
             ) : (
               <div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "1rem", maxHeight: "200px", overflowY: "auto" }}>
                   {cart.map((item) => (
-                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#060a14", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid var(--border-ui)" }}>
+                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#020B16", padding: "0.65rem 0.8rem", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
                       <div>
                         <strong style={{ fontSize: "0.85rem" }}>{item.title}</strong>
-                        <div className="mono" style={{ fontSize: "0.75rem", color: "var(--green)" }}>RM {item.price.toFixed(2)}</div>
+                        <div className="mono" style={{ fontSize: "0.75rem", color: "var(--emerald)" }}>RM {item.price.toFixed(2)}</div>
                       </div>
-                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer" }}>
+                      <button onClick={() => removeFromCart(item.id)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -820,23 +1019,23 @@ function App() {
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value)}
                   />
-                  <button onClick={applyCoupon} className="btn-pill btn-cyan mono">Tebus</button>
+                  <button onClick={applyCoupon} className="btn-action-icon mono" style={{ width: "auto", padding: "0 0.9rem" }}>Tebus</button>
                 </div>
 
-                <div style={{ borderTop: "1px solid var(--border-ui)", paddingTop: "0.7rem", marginBottom: "0.9rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.8rem" }}>
-                    <span>Jumlah:</span>
+                <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: "0.7rem", marginBottom: "0.9rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+                    <span>Jumlah Kasar:</span>
                     <span className="mono">RM {cartSubtotal.toFixed(2)}</span>
                   </div>
                   {discountPercent > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", color: "var(--green)", fontSize: "0.8rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "var(--emerald)", fontSize: "0.8rem" }}>
                       <span>Diskaun ({discountPercent}%):</span>
                       <span className="mono">- RM {(cartSubtotal * discountPercent / 100).toFixed(2)}</span>
                     </div>
                   )}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.05rem", fontWeight: 800, marginTop: "0.3rem" }}>
-                    <span>Total:</span>
-                    <span className="mono" style={{ color: "var(--green)" }}>RM {cartTotal.toFixed(2)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.1rem", fontWeight: 800, marginTop: "0.3rem" }}>
+                    <span>Total Pembayaran:</span>
+                    <span className="mono" style={{ color: "var(--emerald)" }}>RM {cartTotal.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -845,7 +1044,7 @@ function App() {
                   style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}
                   onClick={() => executeCheckout(cart, cartTotal)}
                 >
-                  Bayar & Hantar ke Pengesahan (RM {cartTotal.toFixed(2)})
+                  Bayar Guna Baki (RM {cartTotal.toFixed(2)})
                 </button>
               </div>
             )}
@@ -858,19 +1057,23 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--cyan)" }}>
-                <LifeBuoy size={18} /> Borang Tiket Bantuan Pengguna
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--neon-cyan)" }}>
+                <LifeBuoy size={18} /> Tiket Bantuan Pengguna
               </h3>
               <button onClick={() => setShowTicketModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
+            <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.9rem" }}>
+              Tiket ini akan dihantar terus ke peti mel: <strong style={{ color: "var(--emerald)" }}>{SUPPORT_EMAIL}</strong>
+            </p>
+
             <form onSubmit={handleSendTicket}>
               <div style={{ marginBottom: "0.75rem" }}>
-                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>EMAIL ANDA (WAJIB)</label>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>EMAIL ANDA (WAJIB)</label>
                 <input type="email" className="input-styled mono" placeholder="nama@gmail.com" value={ticketForm.email} onChange={(e) => setTicketForm({ ...ticketForm, email: e.target.value })} required />
               </div>
               <div style={{ marginBottom: "0.75rem" }}>
-                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>KATEGORI ISU</label>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>KATEGORI ISU</label>
                 <select className="input-styled mono" value={ticketForm.category} onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}>
                   <option value="Masalah Pembelian / Topup">Masalah Pembelian / Topup PIN</option>
                   <option value="Pertanyaan Pesanan Belum Diterima">Pertanyaan Pesanan Belum Diterima</option>
@@ -878,7 +1081,7 @@ function App() {
                 </select>
               </div>
               <div style={{ marginBottom: "1rem" }}>
-                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>MESEJ BANTUAN</label>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>MESEJ BANTUAN</label>
                 <textarea className="input-styled mono" rows="4" placeholder="Tuliskan masalah anda..." value={ticketForm.message} onChange={(e) => setTicketForm({ ...ticketForm, message: e.target.value })} required style={{ resize: "vertical" }} />
               </div>
               <button type="submit" className="btn-buy-now mono" style={{ width: "100%", justifyContent: "center", padding: "0.8rem" }} disabled={isSendingTicket}>
@@ -889,7 +1092,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL AUTH */}
+      {/* MODAL AUTH (LOGIN & REGISTER - TIADA BONUS PENDAFTARAN) */}
       {showAuth && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -897,22 +1100,22 @@ function App() {
               <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>Pusat Akses Akaun</h3>
               <button onClick={() => setShowAuth(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
-            <div style={{ display: "flex", borderBottom: "1px solid var(--border-ui)", marginBottom: "1rem" }} className="mono">
-              <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "login" ? "2px solid var(--green)" : "none", color: authTab === "login" ? "var(--green)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("login")}>Log Masuk</button>
-              <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "register" ? "2px solid var(--green)" : "none", color: authTab === "register" ? "var(--green)" : "var(--text-muted)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("register")}>Daftar (+RM10)</button>
+            <div style={{ display: "flex", borderBottom: "1px solid var(--border-subtle)", marginBottom: "1rem" }} className="mono">
+              <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "login" ? "2px solid var(--emerald)" : "none", color: authTab === "login" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("login")}>Log Masuk</button>
+              <button style={{ flex: 1, padding: "0.6rem", background: "none", border: "none", borderBottom: authTab === "register" ? "2px solid var(--emerald)" : "none", color: authTab === "register" ? "var(--emerald)" : "var(--text-secondary)", cursor: "pointer", fontWeight: 700 }} onClick={() => setAuthTab("register")}>Daftar Akaun</button>
             </div>
-            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "var(--red)", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
+            {authForm.err && <div style={{ background: "rgba(244, 63, 94, 0.15)", color: "#F43F5E", padding: "0.5rem", borderRadius: "6px", fontSize: "0.78rem", marginBottom: "0.8rem" }}>{authForm.err}</div>}
             <form onSubmit={handleAuthSubmit}>
               <div style={{ marginBottom: "0.8rem" }}>
-                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>USERNAME</label>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>USERNAME</label>
                 <input type="text" className="input-styled mono" placeholder="Cth: FaridDigital" value={authForm.user} onChange={(e) => setAuthForm({ ...authForm, user: e.target.value })} required />
               </div>
               <div style={{ marginBottom: "1.2rem" }}>
-                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>PASSWORD</label>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>PASSWORD</label>
                 <input type="password" className="input-styled mono" placeholder="••••••••" value={authForm.pass} onChange={(e) => setAuthForm({ ...authForm, pass: e.target.value })} required />
               </div>
               <button type="submit" className="btn-buy-now mono" style={{ width: "100%", justifyContent: "center", padding: "0.75rem" }}>
-                {authTab === "login" ? "Log Masuk Sekarang" : "Cipta Akaun & Tebus RM10"}
+                {authTab === "login" ? "Log Masuk Sekarang" : "Cipta Akaun"}
               </button>
             </form>
           </div>
@@ -924,16 +1127,16 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
-              <h3 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--green)" }}>
+              <h3 style={{ fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--emerald)" }}>
                 <Ticket size={18} /> Tebus PIN Top-up Dompet
               </h3>
               <button onClick={() => setShowRedeem(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="btn-pill btn-whatsapp mono" style={{ width: "100%", justifyContent: "center", padding: "0.65rem", marginBottom: "1rem" }}>
-              <MessageCircle size={15} /> Beli PIN di WhatsApp Admin (018-3915460)
+            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="menu-item-btn accent-register" style={{ justifyContent: "center", padding: "0.65rem", marginBottom: "1rem" }}>
+              <MessageCircle size={16} /> Beli PIN di WhatsApp Admin (018-3915460)
             </a>
             <form onSubmit={handleRedeem}>
-              <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>MASUKKAN KOD PIN BAUCA</label>
+              <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>MASUKKAN KOD PIN BAUCA</label>
               <input type="text" className="input-styled mono" style={{ textAlign: "center", fontSize: "1.1rem", letterSpacing: "2px", textTransform: "uppercase" }} placeholder="BK5-XXXX-XXXX" value={inputPin} onChange={(e) => setInputPin(e.target.value)} required />
               <button type="submit" className="btn-buy-now mono" style={{ width: "100%", justifyContent: "center", padding: "0.75rem", marginTop: "0.85rem" }}>
                 Tebus Masuk Baki
@@ -943,12 +1146,12 @@ function App() {
         </div>
       )}
 
-      {/* MODAL ADMIN DASHBOARD (PIN RAHSIA KEKAL DILINDUNGI & ORDER QUEUE) */}
+      {/* MODAL ADMIN DASHBOARD (PIN RAHSIA KEKAL DILINDUNGI) */}
       {showAdmin && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ borderColor: "var(--gold)" }}>
+          <div className="modal-content" style={{ borderColor: "var(--admin-accent)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
-              <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--gold)" }}>
+              <h3 style={{ fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--admin-accent)" }}>
                 <ShieldAlert size={18} /> Admin Management Portal
               </h3>
               <button onClick={() => setShowAdmin(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
@@ -956,7 +1159,7 @@ function App() {
 
             {!isAdmin ? (
               <form onSubmit={(e) => { e.preventDefault(); if (adminPin === ADMIN_PIN) { setIsAdmin(true); setAdminPin(""); } else showToast("Akses Ditolak: PIN Salah!"); }}>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.6rem" }}>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
                   Masukkan PIN Keselamatan Pentadbir:
                 </p>
                 <input 
@@ -969,89 +1172,59 @@ function App() {
                   onChange={(e) => setAdminPin(e.target.value)} 
                   autoFocus 
                 />
-                <button type="submit" className="btn-pill btn-admin mono" style={{ width: "100%", justifyContent: "center", padding: "0.75rem", marginTop: "0.85rem" }}>
+                <button type="submit" className="btn-buy-now mono" style={{ width: "100%", justifyContent: "center", padding: "0.75rem", marginTop: "0.85rem", background: "var(--admin-accent)", color: "#020B16" }}>
                   Sahkan Akses
                 </button>
               </form>
             ) : (
               <div>
-                {/* Admin Navigation Tabs */}
                 <div style={{ display: "flex", gap: "0.4rem", marginBottom: "1rem" }} className="mono">
-                  <button 
-                    className={`filter-btn ${adminTab === "orders" ? "active" : ""}`}
-                    onClick={() => setAdminTab("orders")}
-                    style={{ flex: 1, justifyContent: "center", position: "relative" }}
-                  >
+                  <button className={`filter-btn ${adminTab === "orders" ? "active" : ""}`} onClick={() => setAdminTab("orders")} style={{ flex: 1, justifyContent: "center" }}>
                     Pesanan Masuk {pendingOrdersCount > 0 && `(${pendingOrdersCount})`}
                   </button>
-                  <button 
-                    className={`filter-btn ${adminTab === "products" ? "active" : ""}`}
-                    onClick={() => setAdminTab("products")}
-                    style={{ flex: 1, justifyContent: "center" }}
-                  >
+                  <button className={`filter-btn ${adminTab === "products" ? "active" : ""}`} onClick={() => setAdminTab("products")} style={{ flex: 1, justifyContent: "center" }}>
                     Urus Produk
                   </button>
-                  <button 
-                    className={`filter-btn ${adminTab === "pins" ? "active" : ""}`}
-                    onClick={() => setAdminTab("pins")}
-                    style={{ flex: 1, justifyContent: "center" }}
-                  >
+                  <button className={`filter-btn ${adminTab === "pins" ? "active" : ""}`} onClick={() => setAdminTab("pins")} style={{ flex: 1, justifyContent: "center" }}>
                     Jana PIN
                   </button>
                 </div>
 
-                {/* TAB 1: PENGESAHAN PESANAN & KEY-IN MESEJ PENGHANTARAN */}
                 {adminTab === "orders" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span className="mono" style={{ fontSize: "0.75rem", color: "var(--cyan)" }}>
-                        PESANAN MENUNGGU PENGESAHAN: {pendingOrdersCount}
-                      </span>
-                    </div>
-
                     {orders.length === 0 ? (
-                      <p style={{ textAlign: "center", color: "var(--text-muted)", padding: "1.5rem" }}>Tiada sebarang rekod pesanan.</p>
+                      <p style={{ textAlign: "center", color: "var(--text-secondary)", padding: "1.5rem" }}>Tiada sebarang pesanan masuk.</p>
                     ) : (
                       orders.map((ord) => (
-                        <div key={ord.id} style={{ background: "#060a14", border: "1px solid var(--border-ui)", padding: "0.9rem", borderRadius: "10px" }}>
+                        <div key={ord.id} style={{ background: "#020B16", border: "1px solid var(--border-subtle)", padding: "0.9rem", borderRadius: "10px" }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>
                               <strong style={{ fontSize: "0.9rem", color: "#fff" }}>{ord.productTitle}</strong>
-                              <div className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                                Pembeli: <span style={{ color: "var(--green)" }}>{ord.username}</span> • RM {ord.price.toFixed(2)} • {ord.createdAt}
+                              <div className="mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+                                Pembeli: <span style={{ color: "var(--emerald)" }}>{ord.username}</span> • RM {ord.price.toFixed(2)}
                               </div>
                             </div>
-                            <span className={`badge-status ${ord.status === "DELIVERED" ? "badge-avail" : "badge-pending"}`}>
-                              {ord.status === "DELIVERED" ? "SELESAI" : "PENDING"}
+                            <span className="mono" style={{ fontSize: "0.7rem", color: ord.status === "DELIVERED" ? "var(--emerald)" : "var(--admin-accent)" }}>
+                              {ord.status}
                             </span>
                           </div>
 
-                          {/* Jika Masih Pending: Borang Key-in Mesej untuk Admin */}
-                          {ord.status === "PENDING" ? (
-                            <div style={{ marginTop: "0.8rem", borderTop: "1px solid var(--border-ui)", paddingTop: "0.7rem" }}>
-                              <label className="mono" style={{ fontSize: "0.72rem", color: "var(--gold)", display: "block", marginBottom: "0.25rem" }}>
-                                ✍️ KEY-IN MESEJ / KREDENSIAL / PAUTAN FAIL:
-                              </label>
+                          {ord.status === "PENDING" && (
+                            <div style={{ marginTop: "0.6rem" }}>
                               <textarea
                                 className="input-styled mono"
-                                rows="3"
-                                placeholder="Cth: Terima kasih! Berikut akaun anda: Email: xx@gmail.com | Pass: yy | Pautan: https://drive.google.com/..."
+                                rows="2"
+                                placeholder="Key-in pautan fail atau akaun di sini..."
                                 value={adminMsgInputs[ord.id] || ""}
                                 onChange={(e) => setAdminMsgInputs({ ...adminMsgInputs, [ord.id]: e.target.value })}
-                                style={{ resize: "vertical", fontSize: "0.8rem" }}
                               />
                               <button 
                                 onClick={() => handleFulfillOrder(ord.id)}
                                 className="btn-buy-now mono"
-                                style={{ marginTop: "0.5rem", width: "100%", justifyContent: "center" }}
+                                style={{ marginTop: "0.4rem", width: "100%", justifyContent: "center" }}
                               >
-                                <Send size={14} /> Hantar ke Peti Pengguna & Sahkan Selesai
+                                <Send size={14} /> Hantar ke Peti Pengguna
                               </button>
-                            </div>
-                          ) : (
-                            <div style={{ marginTop: "0.6rem", background: "rgba(0,192,135,0.06)", padding: "0.5rem 0.75rem", borderRadius: "6px", fontSize: "0.75rem" }}>
-                              <span style={{ color: "var(--green)", fontWeight: 700 }}>Mesej Dihantar: </span>
-                              <span className="mono" style={{ color: "#cbd5e1" }}>{ord.adminMessage}</span>
                             </div>
                           )}
                         </div>
@@ -1060,14 +1233,12 @@ function App() {
                   </div>
                 )}
 
-                {/* TAB 2: TAMBAH & PADAM PRODUK */}
                 {adminTab === "products" && (
                   <div>
-                    <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)", marginBottom: "1rem" }}>
-                      <h4 style={{ fontSize: "0.88rem", color: "var(--cyan)", marginBottom: "0.5rem" }}>+ Tambah Produk Baharu</h4>
+                    <div style={{ background: "#020B16", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-subtle)", marginBottom: "1rem" }}>
+                      <h4 style={{ fontSize: "0.88rem", color: "var(--neon-cyan)", marginBottom: "0.5rem" }}>+ Tambah Produk Baharu</h4>
                       <form onSubmit={handleAddProduct}>
-                        <input type="text" className="input-styled mono" placeholder="Nama Produk / Template" value={newProd.title} onChange={(e) => setNewProd({ ...newProd, title: e.target.value })} required />
-                        
+                        <input type="text" className="input-styled mono" placeholder="Nama Produk" value={newProd.title} onChange={(e) => setNewProd({ ...newProd, title: e.target.value })} required />
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.4rem", marginTop: "0.4rem" }}>
                           <select className="input-styled mono" value={newProd.category} onChange={(e) => setNewProd({ ...newProd, category: e.target.value })}>
                             <option value="template">Website Template</option>
@@ -1076,70 +1247,48 @@ function App() {
                           </select>
                           <input type="number" step="0.5" className="input-styled mono" placeholder="Harga RM" value={newProd.price} onChange={(e) => setNewProd({ ...newProd, price: e.target.value })} required />
                         </div>
-
-                        <input type="text" className="input-styled mono" placeholder="Pautan URL Gambar Mockup (Image URL)" value={newProd.previewImg} onChange={(e) => setNewProd({ ...newProd, previewImg: e.target.value })} />
-                        <textarea className="input-styled mono" rows="2" placeholder="Tulisan penerangan penuh produk..." value={newProd.fullWriteup} onChange={(e) => setNewProd({ ...newProd, fullWriteup: e.target.value })} />
-                        <input type="text" className="input-styled mono" placeholder="Kelebihan (pisahkan dengan koma)" value={newProd.features} onChange={(e) => setNewProd({ ...newProd, features: e.target.value })} />
-
+                        <input type="text" className="input-styled mono" placeholder="Pautan URL Gambar" value={newProd.previewImg} onChange={(e) => setNewProd({ ...newProd, previewImg: e.target.value })} />
+                        <textarea className="input-styled mono" rows="2" placeholder="Penerangan penuh produk..." value={newProd.fullWriteup} onChange={(e) => setNewProd({ ...newProd, fullWriteup: e.target.value })} />
                         <button type="submit" className="btn-buy-now mono" style={{ width: "100%", justifyContent: "center", marginTop: "0.6rem" }}>
                           Terbitkan Produk
                         </button>
                       </form>
                     </div>
 
-                    <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
-                      <h4 style={{ fontSize: "0.88rem", color: "var(--red)", marginBottom: "0.5rem" }}>Senarai Padam Produk ({products.length})</h4>
-                      <div style={{ maxHeight: "180px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                        {products.map((p) => (
-                          <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0c1322", padding: "0.5rem 0.75rem", borderRadius: "6px" }}>
-                            <div>
-                              <strong style={{ fontSize: "0.82rem" }}>{p.title}</strong>
-                              <span className="mono" style={{ fontSize: "0.72rem", color: "var(--green)", marginLeft: "0.5rem" }}>RM {p.price}</span>
-                            </div>
-                            <button onClick={() => handleDeleteProduct(p.id, p.title)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer" }}>
-                              <Trash2 size={15} />
-                            </button>
+                    <div style={{ maxHeight: "160px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                      {products.map((p) => (
+                        <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#020B16", padding: "0.5rem 0.75rem", borderRadius: "6px" }}>
+                          <div>
+                            <strong style={{ fontSize: "0.82rem" }}>{p.title}</strong>
+                            <span className="mono" style={{ fontSize: "0.72rem", color: "var(--emerald)", marginLeft: "0.5rem" }}>RM {p.price}</span>
                           </div>
-                        ))}
-                      </div>
+                          <button onClick={() => handleDeleteProduct(p.id, p.title)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {/* TAB 3: JANA PIN */}
                 {adminTab === "pins" && (
                   <div>
-                    <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)", marginBottom: "0.8rem" }}>
-                      <span className="mono" style={{ fontSize: "0.75rem", color: "var(--green)", display: "block", marginBottom: "0.5rem" }}>
-                        JANA PIN MENGIKUT NILAI:
-                      </span>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.45rem" }}>
-                        <button onClick={() => handleGeneratePin(5)} className="btn-pill btn-green mono" style={{ justifyContent: "center" }}>+ RM 5</button>
-                        <button onClick={() => handleGeneratePin(10)} className="btn-pill btn-cyan mono" style={{ justifyContent: "center" }}>+ RM 10</button>
-                        <button onClick={() => handleGeneratePin(50)} className="btn-pill btn-admin mono" style={{ justifyContent: "center" }}>+ RM 50</button>
-                      </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.45rem", marginBottom: "0.8rem" }}>
+                      <button onClick={() => handleGeneratePin(5)} className="btn-buy-now mono" style={{ justifyContent: "center" }}>+ RM 5</button>
+                      <button onClick={() => handleGeneratePin(10)} className="btn-buy-now mono" style={{ justifyContent: "center", background: "var(--neon-cyan)" }}>+ RM 10</button>
+                      <button onClick={() => handleGeneratePin(50)} className="btn-buy-now mono" style={{ justifyContent: "center", background: "var(--admin-accent)" }}>+ RM 50</button>
                     </div>
-
-                    <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
-                      <h4 style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>Senarai PIN ({pinDb.length})</h4>
-                      <div style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                        {pinDb.map((pin, i) => (
-                          <div key={i} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0c1322", padding: "0.45rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem" }}>
-                            <div>
-                              <strong>{pin.code}</strong> (RM {pin.value})
-                              <span style={{ marginLeft: "0.4rem", color: pin.status === "AVAILABLE" ? "var(--green)" : "var(--red)" }}>
-                                {pin.status === "AVAILABLE" ? "AKTIF" : `DIGUNAKAN`}
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", gap: "0.4rem" }}>
-                              {pin.status === "AVAILABLE" && (
-                                <button onClick={() => { navigator.clipboard.writeText(pin.code); showToast("PIN disalin!"); }} style={{ background: "none", border: "none", color: "var(--cyan)", cursor: "pointer" }}>Salin</button>
-                              )}
-                              <button onClick={() => handleDeletePin(pin.code)} style={{ background: "none", border: "none", color: "var(--red)", cursor: "pointer" }}><Trash2 size={13} /></button>
-                            </div>
+                    <div style={{ maxHeight: "180px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                      {pinDb.map((pin, i) => (
+                        <div key={i} className="mono" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#020B16", padding: "0.45rem 0.75rem", borderRadius: "6px", fontSize: "0.78rem" }}>
+                          <div>
+                            <strong>{pin.code}</strong> (RM {pin.value}) - <span style={{ color: pin.status === "AVAILABLE" ? "var(--emerald)" : "var(--text-secondary)" }}>{pin.status}</span>
                           </div>
-                        ))}
-                      </div>
+                          <button onClick={() => handleDeletePin(pin.code)} style={{ background: "none", border: "none", color: "#F43F5E", cursor: "pointer" }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
