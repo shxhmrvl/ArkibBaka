@@ -5,11 +5,13 @@ import {
   ShoppingBag, Lock, Unlock, KeyRound, User, LogIn, LogOut, UserPlus,
   ShieldAlert, X, Copy, PlusCircle, Ticket, MessageCircle, 
   Package, Sparkles, Globe, Bot, ArrowRight, Eye, Search, 
-  ShoppingCart, Download, Code, Star, Trash2, Check
+  ShoppingCart, Download, Code, Star, Trash2, Check,
+  Send, LifeBuoy, FileText, Image as ImageIcon
 } from "lucide-react";
 
 // PIN RAHSIA ADMIN (TIDAK DITAMPILKAN PADA UI)
 const ADMIN_PIN = "200200";
+const SUPPORT_EMAIL = "shhmrvl@gmail.com";
 const WHATSAPP_PHONE = "60183915460";
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent("Salam Admin, saya nak beli PIN Topup BakaHub Market")}`;
 
@@ -21,10 +23,10 @@ const save = (key, val) => {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 };
 
-// Penjana Kod PIN mengikut Nilai (RM5, RM10, RM50)
 const genPinWithVal = (value) => `BK${value}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`;
 const genLicKey = () => `BK-LIC-${Math.random().toString(36).substring(2, 7).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
+// PRODUK DIGITAL DENGAN GAMBAR & TULISAN PENERANGAN (BUKAN KOD)
 const INITIAL_PRODUCTS = [
   {
     id: "tpl_kahwin_vip",
@@ -34,8 +36,9 @@ const INITIAL_PRODUCTS = [
     price: 15.0,
     rating: 4.9,
     sales: 142,
+    previewImg: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Templat jemputan kahwin digital moden dengan susunan fon elegan. Pengunjung boleh mengesahkan kehadiran melalui borang RSVP terus ke spreadsheet/WhatsApp, mendengar lagu pengantin, serta menekan pautan navigasi Waze dan Google Maps secara langsung.",
     features: ["Responsif Telefon / Desktop", "Audio Latar & RSVP Form", "Countdown & Lokasi Majlis"],
-    previewType: "wedding",
     downloadUrl: "https://github.com/example/wedding-rsvp-template"
   },
   {
@@ -46,8 +49,9 @@ const INITIAL_PRODUCTS = [
     price: 25.0,
     rating: 5.0,
     sales: 89,
+    previewImg: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Landing page berprestasi tinggi yang dioptimumkan untuk konversi jualan perisian SaaS. Dilengkapi dengan jadual harga (Pricing Table), testimoni pelanggan, bahagian FAQ akordion, dan reka bentuk gelap (Dark Mode) bertaraf antarabangsa.",
     features: ["Next.js & Tailwind CSS", "Pricing Table & FAQ", "Formulir Jualan Siap"],
-    previewType: "saas",
     downloadUrl: "https://github.com/example/saas-landing-template"
   },
   {
@@ -58,8 +62,9 @@ const INITIAL_PRODUCTS = [
     price: 12.0,
     rating: 4.8,
     sales: 210,
+    previewImg: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Pamerkan kepakaran pengaturcaraan anda dengan gaya futuristik. Mengandungi galeri projek dengan penapis kategori, garis masa pengalaman kerja, butang muat turun resume PDF, dan borang perhubungan yang kemas.",
     features: ["Animasi Framer Motion", "Showcase Projek Interaktif", "CV Download Button"],
-    previewType: "portfolio",
     downloadUrl: "https://github.com/example/dev-portfolio-cyber"
   },
   {
@@ -70,8 +75,9 @@ const INITIAL_PRODUCTS = [
     price: 8.0,
     rating: 4.7,
     sales: 320,
+    previewImg: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Dibina khas mengikut piawaian sistem tapisan Applicant Tracking System (ATS). Tipografi dan hierarki maklumat disusun rapi untuk memaksimumkan peluang temuduga kerja dalam format PDF dan laman web interaktif.",
     features: ["Format Web & PDF", "Standard ATS Terbukti", "Mudah Edit dalam 5 Minit"],
-    previewType: "resume",
     downloadUrl: "https://github.com/example/ats-resume-template"
   },
   {
@@ -82,6 +88,8 @@ const INITIAL_PRODUCTS = [
     price: 18.0,
     rating: 4.9,
     sales: 412,
+    previewImg: "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Langganan akaun ChatGPT Plus selama 30 hari. Akses penuh kepada model penaakulan GPT-4o, penterjemahan pantas, penciptaan kod pengaturcaraan, dan sokongan memuat naik fail dokumen untuk analisis terus.",
     features: ["Akses Model GPT-4o", "Penjana Imej DALL-E 3", "Jaminan Waranti 30 Hari"],
     credentialSeed: "Email: gpt_plus@bakahub.me | Kata Laluan: BakaGPT#2026"
   },
@@ -93,6 +101,8 @@ const INITIAL_PRODUCTS = [
     price: 14.0,
     rating: 5.0,
     sales: 650,
+    previewImg: "https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Akaun rasmi Netflix pelan Premium 4K Ultra HD. Anda diberikan 1 profil khas yang dilindungi PIN 4-digit tersendiri untuk menjaga senarai tontonan peribadi anda tanpa gangguan pengguna lain.",
     features: ["Kualiti 4K Ultra HD", "Profil Khas dengan PIN", "Sokongan Semua Peranti"],
     credentialSeed: "Email: nflx_my@bakahub.me | Profil 3 (PIN: 7721)"
   },
@@ -104,6 +114,8 @@ const INITIAL_PRODUCTS = [
     price: 7.0,
     rating: 4.9,
     sales: 580,
+    previewImg: "https://images.unsplash.com/photo-1614680376593-902f749f7ffc?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Nikmati penstriman muzik tanpa had bebas iklan. Boleh memuat turun album dan senarai main untuk dimainkan secara luar talian dengan kualiti audio 320kbps yang jernih.",
     features: ["Tanpa Iklan Sepenuhnya", "Muat Turun Lagu Offline", "Langkau Tanpa Had"],
     credentialSeed: "Email: spot_vip@bakahub.me | Kata Laluan: MusicBaka#2026"
   },
@@ -115,6 +127,8 @@ const INITIAL_PRODUCTS = [
     price: 9.0,
     rating: 4.8,
     sales: 290,
+    previewImg: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Akses YouTube bebas iklan pada semua peranti (telefon, PC, dan Smart TV). Menyokong Picture-in-Picture (PiP) dan mainan latar belakang apabila skrin telefon ditutup.",
     features: ["Tanpa Gangguan Iklan", "Main Belakang Skrin", "Termasuk YT Music App"],
     credentialSeed: "Jemputan Slot Keluarga dihantar terus ke email Google anda."
   },
@@ -126,30 +140,31 @@ const INITIAL_PRODUCTS = [
     price: 35.0,
     rating: 5.0,
     sales: 78,
+    previewImg: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
+    fullWriteup: "Pakej asas permulaan projek perisian lengkap. Siap dibina dengan sistem pendaftaran akaun Supabase, pengesahan email, papan pemuka analitik, dan sokongan sistem baucar kod.",
     features: ["TypeScript & React Vite", "Supabase Auth & Database", "Komponen UI Lengkap"],
-    previewType: "code",
     downloadUrl: "https://github.com/example/react-saas-starter"
   }
 ];
 
 function App() {
-  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v3", []));
-  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v3", ""));
+  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v4", []));
+  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v4", ""));
   const currentUser = usersDb.find((u) => u.username === currentUsername) || null;
 
-  // Senarai Produk Digital (Boleh Tambah & Padam)
-  const [products, setProducts] = useState(() => load("bakahub_products_v3", INITIAL_PRODUCTS));
+  // Produk & Kategori
+  const [products, setProducts] = useState(() => load("bakahub_products_v4", INITIAL_PRODUCTS));
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Troli & Kupon
-  const [cart, setCart] = useState(() => load("bakahub_cart_v3", []));
+  // Troli
+  const [cart, setCart] = useState(() => load("bakahub_cart_v4", []));
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
 
-  // Baucar PIN (Nilai RM5, RM10, RM50)
-  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v3", [
+  // Baucar PIN (RM5, RM10, RM50)
+  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v4", [
     { code: "BK5-8888-9999", value: 5, status: "AVAILABLE" },
     { code: "BK10-1111-2222", value: 10, status: "AVAILABLE" },
     { code: "BK50-3333-4444", value: 50, status: "AVAILABLE" }
@@ -165,15 +180,26 @@ function App() {
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showInventory, setShowInventory] = useState(false);
 
+  // SISTEM TIKET BANTUAN (EMAIL KE shhmrvl@gmail.com)
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    name: "",
+    email: "",
+    category: "Masalah Pembelian / Topup",
+    message: ""
+  });
+  const [isSendingTicket, setIsSendingTicket] = useState(false);
+
   // Admin Portal (PIN Rahsia)
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminTab, setAdminTab] = useState("products"); // 'products' | 'pins'
+  const [adminTab, setAdminTab] = useState("products");
 
-  // Borang Tambah Produk Baharu
+  // Borang Tambah Produk
   const [newProd, setNewProd] = useState({
     title: "", category: "template", desc: "", price: "15",
+    previewImg: "", fullWriteup: "",
     features: "Akses Seumur Hidup, Kemas Kini Percuma",
     downloadUrl: "", credentialSeed: ""
   });
@@ -181,11 +207,11 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  useEffect(() => save("bakahub_users_v3", usersDb), [usersDb]);
-  useEffect(() => save("bakahub_session_v3", currentUsername), [currentUsername]);
-  useEffect(() => save("bakahub_products_v3", products), [products]);
-  useEffect(() => save("bakahub_cart_v3", cart), [cart]);
-  useEffect(() => save("bakahub_pins_v3", pinDb), [pinDb]);
+  useEffect(() => save("bakahub_users_v4", usersDb), [usersDb]);
+  useEffect(() => save("bakahub_session_v4", currentUsername), [currentUsername]);
+  useEffect(() => save("bakahub_products_v4", products), [products]);
+  useEffect(() => save("bakahub_cart_v4", cart), [cart]);
+  useEffect(() => save("bakahub_pins_v4", pinDb), [pinDb]);
 
   // Auth: Daftar / Login
   const handleAuthSubmit = (e) => {
@@ -198,7 +224,7 @@ function App() {
       if (usersDb.some((x) => x.username.toLowerCase() === u.toLowerCase())) {
         return setAuthForm({ ...authForm, err: "Username sudah wujud!" });
       }
-      const newUser = { username: u, password: p, balance: 10.0, library: [] }; // Bonus pendaftaran RM10
+      const newUser = { username: u, password: p, balance: 10.0, library: [] };
       const updated = [...usersDb, newUser];
       setUsersDb(updated);
       setCurrentUsername(u);
@@ -307,6 +333,53 @@ function App() {
     });
   };
 
+  // PENGHANTARAN TIKET BANTUAN TERUS KE EMAIL: shhmrvl@gmail.com
+  const handleSendTicket = async (e) => {
+    e.preventDefault();
+    if (!ticketForm.email || !ticketForm.message) {
+      return showToast("Sila lengkapkan email dan mesej anda!");
+    }
+
+    setIsSendingTicket(true);
+    const ticketId = `#TKT-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    try {
+      // Hantar terus ke API FormSubmit yang akan meneruskan email ke shhmrvl@gmail.com
+      const res = await fetch(`https://formsubmit.co/ajax/${SUPPORT_EMAIL}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          Ticket_ID: ticketId,
+          Pengirim_Nama: ticketForm.name || (currentUser ? currentUser.username : "Tetamu"),
+          Pengirim_Email: ticketForm.email,
+          Kategori_Masalah: ticketForm.category,
+          Mesej_Bantuan: ticketForm.message,
+          Tarikh: new Date().toLocaleString("ms-MY")
+        })
+      });
+
+      if (res.ok) {
+        showToast(`✅ Tiket ${ticketId} berjaya dihantar ke ${SUPPORT_EMAIL}!`);
+      } else {
+        throw new Error("Fallback required");
+      }
+    } catch {
+      // Fallback jika servis API terhad: Buka pautan mailto terus ke emel sasaran
+      const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`[Tiket Bantuan ${ticketId}] ${ticketForm.category}`)}&body=${encodeURIComponent(
+        `Nama: ${ticketForm.name || "Pengguna"}\nEmail: ${ticketForm.email}\nKategori: ${ticketForm.category}\n\nMesej:\n${ticketForm.message}`
+      )}`;
+      window.open(mailtoUrl, "_blank");
+      showToast(`✅ Tiket dibuka ke emel ${SUPPORT_EMAIL}!`);
+    } finally {
+      setIsSendingTicket(false);
+      setShowTicketModal(false);
+      setTicketForm({ name: "", email: "", category: "Masalah Pembelian / Topup", message: "" });
+    }
+  };
+
   // FUNGSI ADMIN: TAMBAH PRODUK
   const handleAddProduct = (e) => {
     e.preventDefault();
@@ -321,16 +394,17 @@ function App() {
       price: pVal,
       rating: 5.0,
       sales: 0,
+      previewImg: newProd.previewImg.trim() || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+      fullWriteup: newProd.fullWriteup.trim() || "Penerangan lengkap templat produk digital berkualiti tinggi.",
       features: newProd.features.split(",").map(f => f.trim()).filter(Boolean),
       downloadUrl: newProd.downloadUrl.trim() || null,
-      credentialSeed: newProd.credentialSeed.trim() || null,
-      previewType: newProd.category === "template" ? "saas" : null
+      credentialSeed: newProd.credentialSeed.trim() || null
     };
 
     const updated = [item, ...products];
     setProducts(updated);
-    save("bakahub_products_v3", updated);
-    setNewProd({ title: "", category: "template", desc: "", price: "15", features: "Akses Seumur Hidup, Kemas Kini Percuma", downloadUrl: "", credentialSeed: "" });
+    save("bakahub_products_v4", updated);
+    setNewProd({ title: "", category: "template", desc: "", price: "15", previewImg: "", fullWriteup: "", features: "Akses Seumur Hidup, Kemas Kini Percuma", downloadUrl: "", credentialSeed: "" });
     showToast("✅ Produk baharu berjaya diterbitkan!");
   };
 
@@ -339,26 +413,25 @@ function App() {
     if (confirm(`Adakah anda pasti mahu memadam "${title}"?`)) {
       const updated = products.filter(p => p.id !== id);
       setProducts(updated);
-      save("bakahub_products_v3", updated);
+      save("bakahub_products_v4", updated);
       showToast(`Produk "${title}" telah dipadam.`);
     }
   };
 
-  // FUNGSI ADMIN: JANA PIN (RM5, RM10, RM50)
+  // FUNGSI ADMIN: JANA PIN
   const handleGeneratePin = (val) => {
     const code = genPinWithVal(val);
     const newEntry = { code, value: val, status: "AVAILABLE" };
     const updated = [newEntry, ...pinDb];
     setPinDb(updated);
-    save("bakahub_pins_v3", updated);
+    save("bakahub_pins_v4", updated);
     showToast(`PIN RM ${val} Dijana: ${code}`);
   };
 
-  // FUNGSI ADMIN: PADAM PIN
   const handleDeletePin = (code) => {
     const updated = pinDb.filter(p => p.code !== code);
     setPinDb(updated);
-    save("bakahub_pins_v3", updated);
+    save("bakahub_pins_v4", updated);
     showToast(`PIN ${code} dipadam.`);
   };
 
@@ -386,6 +459,11 @@ function App() {
         </div>
 
         <div className="nav-actions">
+          {/* Butang Tiket Bantuan */}
+          <button className="btn-pill btn-ticket mono" onClick={() => setShowTicketModal(true)}>
+            <LifeBuoy size={14} /> Tiket Bantuan
+          </button>
+
           {currentUser ? (
             <>
               <button className="btn-pill btn-user mono">
@@ -418,7 +496,6 @@ function App() {
             {cart.length > 0 && <span className="cart-count-badge">{cart.length}</span>}
           </button>
 
-          {/* Akses Admin Tanpa Memaparkan PIN */}
           <button className="btn-pill btn-admin mono" onClick={() => setShowAdmin(true)} title="Admin Access">
             <ShieldAlert size={14} /> Admin
           </button>
@@ -554,15 +631,13 @@ function App() {
               <span className="prod-price mono">RM {p.price.toFixed(2)}</span>
 
               <div className="prod-actions-row">
-                {p.previewType && (
-                  <button 
-                    className="btn-action-icon"
-                    onClick={() => setPreviewProduct(p)}
-                    title="Live Demo"
-                  >
-                    <Eye size={15} />
-                  </button>
-                )}
+                <button 
+                  className="btn-action-icon"
+                  onClick={() => setPreviewProduct(p)}
+                  title="Lihat Maklumat & Gambar"
+                >
+                  <Eye size={15} />
+                </button>
                 <button 
                   className="btn-action-icon"
                   onClick={() => addToCart(p)}
@@ -582,57 +657,46 @@ function App() {
         ))}
       </section>
 
-      {/* MODAL PRATONTON (LIVE DEMO) */}
+      {/* MODAL PRATONTON (GAMBAR & TULISAN - BUKAN KOD) */}
       {previewProduct && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: "620px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Eye size={18} color="var(--cyan)" />
-                <h3 style={{ fontSize: "1.05rem", fontWeight: 800 }}>Pratonton: {previewProduct.title}</h3>
+                <ImageIcon size={18} color="var(--cyan)" />
+                <h3 style={{ fontSize: "1.05rem", fontWeight: 800 }}>{previewProduct.title}</h3>
               </div>
               <button onClick={() => setPreviewProduct(null)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
             </div>
 
-            <div style={{ background: "#060a14", border: "1px solid var(--border-ui)", borderRadius: "12px", padding: "1.2rem", textAlign: "center", minHeight: "180px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-              {previewProduct.previewType === "wedding" && (
-                <div>
-                  <h2 style={{ fontFamily: "serif", fontSize: "1.5rem", color: "var(--gold)" }}>Walimatulurus Adam & Hawa</h2>
-                  <p className="mono" style={{ fontSize: "0.8rem", marginTop: "0.3rem", color: "var(--text-muted)" }}>Sabtu, 28 Disember | Dewan Perdana KL</p>
-                  <div style={{ margin: "0.85rem 0", display: "flex", gap: "0.4rem", justifyContent: "center" }}>
-                    <span className="btn-pill btn-green mono" style={{ fontSize: "0.7rem" }}>🎵 Lagu Latar</span>
-                    <span className="btn-pill btn-cyan mono" style={{ fontSize: "0.7rem" }}>📍 Buka Waze</span>
-                  </div>
-                  <p style={{ fontSize: "0.72rem", color: "#64748b" }}>*Templat responsif siap borang ucapan & RSVP tetamu.</p>
-                </div>
-              )}
+            {/* Gambar Mockup Template */}
+            <div className="preview-img-box">
+              <img 
+                src={previewProduct.previewImg || "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80"} 
+                alt={previewProduct.title}
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80";
+                }}
+              />
+            </div>
 
-              {previewProduct.previewType === "saas" && (
-                <div>
-                  <span className="badge-gradient" style={{ fontSize: "0.7rem" }}>🚀 SaaS Platform v2.4</span>
-                  <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "0.3rem" }}>Urus Perniagaan Anda 10x Lebih Pantas</h2>
-                  <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>Konversi tinggi siap pricing table & formulir pendaftaran.</p>
-                </div>
-              )}
+            {/* Tulisan Penerangan (Bukan Kod) */}
+            <div className="preview-article">
+              <h4>Penerangan & Maklumat Produk:</h4>
+              <p>{previewProduct.fullWriteup || previewProduct.desc}</p>
 
-              {previewProduct.previewType === "portfolio" && (
-                <div>
-                  <span className="mono" style={{ color: "var(--green)", fontSize: "0.8rem" }}>&gt; console.log("Farid Hazwan - Fullstack Dev")</span>
-                  <h2 style={{ fontSize: "1.35rem", fontWeight: 800, marginTop: "0.3rem" }}>Senior Software Engineer</h2>
-                  <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>React • Node.js • Cloud Architecture</p>
-                </div>
-              )}
-
-              {previewProduct.previewType === "resume" && (
-                <div>
-                  <h3 style={{ fontSize: "1.25rem", fontWeight: 800 }}>MOHD DANIAL BIN AZMAN</h3>
-                  <p className="mono" style={{ fontSize: "0.72rem", color: "var(--cyan)" }}>Senior Data Analyst | Certified Scrum Master</p>
-                  <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>Format tipografi disahkan melepasi tapisan ATS automatik.</p>
+              {previewProduct.features && (
+                <div style={{ marginTop: "0.8rem", display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                  {previewProduct.features.map((f, i) => (
+                    <span key={i} className="mono" style={{ background: "rgba(0,192,135,0.1)", color: "var(--green)", padding: "0.25rem 0.55rem", borderRadius: "6px", fontSize: "0.72rem" }}>
+                      ✓ {f}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span className="mono" style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--green)" }}>
                 RM {previewProduct.price.toFixed(2)}
               </span>
@@ -643,9 +707,88 @@ function App() {
                   executeCheckout([previewProduct], previewProduct.price);
                 }}
               >
-                Beli Sekarang
+                Beli Produk Ini
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TIKET BANTUAN (HANTAR KE: shhmrvl@gmail.com) */}
+      {showTicketModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--cyan)" }}>
+                <LifeBuoy size={18} /> Borang Tiket Bantuan Pengguna
+              </h3>
+              <button onClick={() => setShowTicketModal(false)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}><X size={18} /></button>
+            </div>
+
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.9rem" }}>
+              Tiket ini akan dihantar terus ke peti mel pengurusan: <strong style={{ color: "var(--green)" }}>{SUPPORT_EMAIL}</strong>
+            </p>
+
+            <form onSubmit={handleSendTicket}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>NAMA ANDA</label>
+                <input 
+                  type="text" 
+                  className="input-styled mono" 
+                  placeholder="Cth: Danial / Tetamu" 
+                  value={ticketForm.name} 
+                  onChange={(e) => setTicketForm({ ...ticketForm, name: e.target.value })} 
+                />
+              </div>
+
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>ALAMAT EMAIL ANDA (WAJIB)</label>
+                <input 
+                  type="email" 
+                  className="input-styled mono" 
+                  placeholder="nama@gmail.com" 
+                  value={ticketForm.email} 
+                  onChange={(e) => setTicketForm({ ...ticketForm, email: e.target.value })} 
+                  required 
+                />
+              </div>
+
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>KATEGORI ISU</label>
+                <select 
+                  className="input-styled mono" 
+                  value={ticketForm.category} 
+                  onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
+                >
+                  <option value="Masalah Pembelian / Topup">Masalah Pembelian / Topup PIN</option>
+                  <option value="Pertanyaan Templat / Muat Turun">Pertanyaan Templat / Muat Turun Fail</option>
+                  <option value="Kredensial Akaun Tidak Berfungsi">Kredensial Akaun Tidak Berfungsi</option>
+                  <option value="Cadangan & Lain-lain">Cadangan & Lain-lain</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>PENERANGAN MASALAH (MESEJ)</label>
+                <textarea 
+                  className="input-styled mono" 
+                  rows="4" 
+                  placeholder="Tuliskan masalah atau pertanyaan anda dengan terperinci..." 
+                  value={ticketForm.message} 
+                  onChange={(e) => setTicketForm({ ...ticketForm, message: e.target.value })} 
+                  required 
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-buy-now mono" 
+                style={{ width: "100%", justifyContent: "center", padding: "0.8rem" }}
+                disabled={isSendingTicket}
+              >
+                <Send size={15} /> {isSendingTicket ? "Menghantar Tiket..." : "Hantar Tiket ke Admin"}
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -846,7 +989,6 @@ function App() {
             </div>
 
             {!isAdmin ? (
-              // Log Masuk PIN Rahsia (Tanpa mendedahkan kod 200200)
               <form onSubmit={(e) => { e.preventDefault(); if (adminPin === ADMIN_PIN) { setIsAdmin(true); setAdminPin(""); } else showToast("Akses Ditolak: PIN Salah!"); }}>
                 <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.6rem" }}>
                   Masukkan PIN Keselamatan Pentadbir:
@@ -867,7 +1009,6 @@ function App() {
               </form>
             ) : (
               <div>
-                {/* Admin Tabs */}
                 <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }} className="mono">
                   <button 
                     className={`filter-btn ${adminTab === "products" ? "active" : ""}`}
@@ -885,10 +1026,9 @@ function App() {
                   </button>
                 </div>
 
-                {/* TAB 1: URUS & PADAM PRODUK */}
+                {/* TAB 1: URUS & PADAM PRODUK (DENGAN URL GAMBAR & TULISAN) */}
                 {adminTab === "products" && (
                   <div>
-                    {/* Borang Tambah Produk */}
                     <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)", marginBottom: "1rem" }}>
                       <h4 style={{ fontSize: "0.88rem", color: "var(--cyan)", marginBottom: "0.5rem" }}>+ Tambah Produk Baharu</h4>
                       <form onSubmit={handleAddProduct}>
@@ -903,7 +1043,8 @@ function App() {
                           <input type="number" step="0.5" className="input-styled mono" placeholder="Harga RM" value={newProd.price} onChange={(e) => setNewProd({ ...newProd, price: e.target.value })} required />
                         </div>
 
-                        <input type="text" className="input-styled mono" placeholder="Penerangan ringkas produk" value={newProd.desc} onChange={(e) => setNewProd({ ...newProd, desc: e.target.value })} />
+                        <input type="text" className="input-styled mono" placeholder="Pautan URL Gambar Mockup (Image URL)" value={newProd.previewImg} onChange={(e) => setNewProd({ ...newProd, previewImg: e.target.value })} />
+                        <textarea className="input-styled mono" rows="2" placeholder="Tulisan penerangan penuh produk..." value={newProd.fullWriteup} onChange={(e) => setNewProd({ ...newProd, fullWriteup: e.target.value })} />
                         <input type="text" className="input-styled mono" placeholder="Kelebihan (pisahkan dengan koma)" value={newProd.features} onChange={(e) => setNewProd({ ...newProd, features: e.target.value })} />
                         <input type="url" className="input-styled mono" placeholder="Pautan Download (jika template/fail)" value={newProd.downloadUrl} onChange={(e) => setNewProd({ ...newProd, downloadUrl: e.target.value })} />
                         <input type="text" className="input-styled mono" placeholder="Kredensial Log Masuk (jika akaun)" value={newProd.credentialSeed} onChange={(e) => setNewProd({ ...newProd, credentialSeed: e.target.value })} />
@@ -914,7 +1055,6 @@ function App() {
                       </form>
                     </div>
 
-                    {/* Senarai Padam Produk */}
                     <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)" }}>
                       <h4 style={{ fontSize: "0.88rem", color: "var(--red)", marginBottom: "0.5rem" }}>Senarai Padam Produk ({products.length})</h4>
                       <div style={{ maxHeight: "180px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
@@ -938,7 +1078,7 @@ function App() {
                   </div>
                 )}
 
-                {/* TAB 2: JANA PIN (RM5, RM10, RM50) & PADAM */}
+                {/* TAB 2: JANA PIN (RM5, RM10, RM50) */}
                 {adminTab === "pins" && (
                   <div>
                     <div style={{ background: "#060a14", padding: "0.85rem", borderRadius: "10px", border: "1px solid var(--border-ui)", marginBottom: "0.8rem" }}>
