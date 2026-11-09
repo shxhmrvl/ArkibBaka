@@ -14,7 +14,7 @@ const SUPPORT_EMAIL = "shhmrvl@gmail.com";
 const WHATSAPP_PHONE = "018-3915460";
 const WHATSAPP_LINK = "https://wa.me/60183915460?text=Salam%20Admin,%20saya%20nak%20beli%20PIN%20Topup%20BakaHub%20Market";
 
-// Helper LocalStorage
+// Helper LocalStorage Serta-merta
 const load = (key, fallback) => {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } 
   catch { return fallback; }
@@ -125,37 +125,30 @@ const INITIAL_PRODUCTS = [
 ];
 
 function App() {
-  // Pangkalan Data Pengguna
-  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v6", []));
-  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v6", ""));
+  const [usersDb, setUsersDb] = useState(() => load("bakahub_users_v7", []));
+  const [currentUsername, setCurrentUsername] = useState(() => load("bakahub_session_v7", ""));
   const currentUser = usersDb.find((u) => u.username === currentUsername) || null;
 
-  // Produk & Kategori
-  const [products, setProducts] = useState(() => load("bakahub_products_v6", INITIAL_PRODUCTS));
+  const [products, setProducts] = useState(() => load("bakahub_products_v7", INITIAL_PRODUCTS));
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Pesanan & Peti Masuk
-  const [orders, setOrders] = useState(() => load("bakahub_orders_v6", []));
+  const [orders, setOrders] = useState(() => load("bakahub_orders_v7", []));
 
-  // Troli & Kupon
-  const [cart, setCart] = useState(() => load("bakahub_cart_v6", []));
+  const [cart, setCart] = useState(() => load("bakahub_cart_v7", []));
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
 
-  // Baucar PIN
-  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v6", [
+  const [pinDb, setPinDb] = useState(() => load("bakahub_pins_v7", [
     { code: "BK5-8888-9999", value: 5, status: "AVAILABLE" },
     { code: "BK10-1111-2222", value: 10, status: "AVAILABLE" },
     { code: "BK50-3333-4444", value: 50, status: "AVAILABLE" }
   ]));
 
-  // Hamburger Menu State
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  // Modals
   const [showAuth, setShowAuth] = useState(false);
   const [authTab, setAuthTab] = useState("login");
   const [authForm, setAuthForm] = useState({ user: "", pass: "", err: "" });
@@ -165,12 +158,10 @@ function App() {
   const [previewProduct, setPreviewProduct] = useState(null);
   const [showInbox, setShowInbox] = useState(false);
 
-  // Tiket Bantuan
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [ticketForm, setTicketForm] = useState({ name: "", email: "", category: "Masalah Pembelian / Topup", message: "" });
   const [isSendingTicket, setIsSendingTicket] = useState(false);
 
-  // Admin Portal
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -184,15 +175,13 @@ function App() {
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // Sync LocalStorage
-  useEffect(() => save("bakahub_users_v6", usersDb), [usersDb]);
-  useEffect(() => save("bakahub_session_v6", currentUsername), [currentUsername]);
-  useEffect(() => save("bakahub_products_v6", products), [products]);
-  useEffect(() => save("bakahub_orders_v6", orders), [orders]);
-  useEffect(() => save("bakahub_cart_v6", cart), [cart]);
-  useEffect(() => save("bakahub_pins_v6", pinDb), [pinDb]);
+  useEffect(() => save("bakahub_users_v7", usersDb), [usersDb]);
+  useEffect(() => save("bakahub_session_v7", currentUsername), [currentUsername]);
+  useEffect(() => save("bakahub_products_v7", products), [products]);
+  useEffect(() => save("bakahub_orders_v7", orders), [orders]);
+  useEffect(() => save("bakahub_cart_v7", cart), [cart]);
+  useEffect(() => save("bakahub_pins_v7", pinDb), [pinDb]);
 
-  // Click outside to close Hamburger Dropdown
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -203,7 +192,6 @@ function App() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [menuOpen]);
 
-  // Auth: Daftar / Login (TANPA BONUS PENDAFTARAN)
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const u = authForm.user.trim();
@@ -214,7 +202,6 @@ function App() {
       if (usersDb.some((x) => x.username.toLowerCase() === u.toLowerCase())) {
         return setAuthForm({ ...authForm, err: "Username sudah wujud!" });
       }
-      // Dilarang sebarang bonus pendaftaran (balance: 0.0)
       const newUser = { 
         username: u, 
         password: p, 
@@ -258,7 +245,7 @@ function App() {
     fn();
   };
 
-  // LOGIK FIRST TIME RECHARGE BONUS SISTEM
+  // Logik First Time Recharge Bonus (RM5 -> +RM1, RM10 -> +RM2, RM50 -> +RM5)
   const handleRedeem = (e) => {
     e.preventDefault();
     requireUser(() => {
@@ -288,27 +275,24 @@ function App() {
         date: new Date().toLocaleString("ms-MY")
       };
 
-      // Kemas kini data pengguna secara transaction-safe
       updateUserBalance({
         balance: newBalance,
         hasClaimedFirstRechargeBonus: currentUser.hasClaimedFirstRechargeBonus || (isFirstRecharge && bonusEarned > 0),
         recharges: [rechargeRecord, ...(currentUser.recharges || [])]
       });
 
-      // Tandakan PIN sebagai digunakan
       setPinDb(pinDb.map((p) => p.code.toUpperCase() === code ? { ...p, status: "USED", usedBy: currentUser.username } : p));
       setInputPin("");
       setShowRedeem(false);
 
       if (bonusEarned > 0) {
-        showToast(`🎉 RECHARGE PERTAMA: Duit RM ${target.value} + Bonus RM ${bonusEarned} dimasukkan! (Jumlah: RM ${totalCredited})`);
+        showToast(`🎉 FIRST RECHARGE: Top-up RM ${target.value} + Bonus RM ${bonusEarned} (Jumlah: RM ${totalCredited})`);
       } else {
-        showToast(`✅ Top-up RM ${target.value}.00 berjaya dimasukkan ke baki dompet.`);
+        showToast(`✅ Top-up RM ${target.value}.00 berjaya dikreditkan.`);
       }
     });
   };
 
-  // Troli & Diskaun
   const addToCart = (product) => {
     if (cart.some((item) => item.id === product.id)) return showToast("Produk sudah ada di troli!");
     setCart([...cart, product]);
@@ -333,7 +317,6 @@ function App() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.price, 0);
   const cartTotal = +(cartSubtotal * (1 - discountPercent / 100)).toFixed(2);
 
-  // Checkout Pesanan
   const executeCheckout = (itemsToBuy, totalCost) => {
     requireUser(() => {
       if (currentUser.balance < totalCost) {
@@ -363,7 +346,6 @@ function App() {
     });
   };
 
-  // Admin Fulfillment
   const handleFulfillOrder = (orderId) => {
     const messageToSend = adminMsgInputs[orderId];
     if (!messageToSend || !messageToSend.trim()) {
@@ -390,7 +372,6 @@ function App() {
   const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
   const myInboxOrders = orders.filter((o) => currentUser && o.username === currentUser.username);
 
-  // Tiket Bantuan ke shhmrvl@gmail.com
   const handleSendTicket = async (e) => {
     e.preventDefault();
     if (!ticketForm.email || !ticketForm.message) return showToast("Sila lengkapkan emel & mesej!");
@@ -422,7 +403,6 @@ function App() {
     }
   };
 
-  // Admin Produk & PIN
   const handleAddProduct = (e) => {
     e.preventDefault();
     const pVal = parseFloat(newProd.price);
@@ -476,7 +456,7 @@ function App() {
       {toast && <div className="toast-msg">{toast}</div>}
 
       {/* =========================================================
-          2. HEADER REDESIGN: LOGO (LEFT) & HAMBURGER (RIGHT) ONLY
+          HEADER (LOGO KIRI & HAMBURGER KANAN)
           ========================================================= */}
       <header className="navbar-luxury" ref={menuRef}>
         <div className="brand-wrapper">
@@ -487,7 +467,6 @@ function App() {
           </div>
         </div>
 
-        {/* Butang Hamburger Tunggal */}
         <button 
           className="hamburger-btn" 
           onClick={() => setMenuOpen(!menuOpen)}
@@ -501,7 +480,6 @@ function App() {
           )}
         </button>
 
-        {/* Dropdown Panel Navigasi Hamburger */}
         {menuOpen && (
           <div className="hamburger-dropdown">
             <button 
@@ -571,57 +549,22 @@ function App() {
       </header>
 
       {/* =========================================================
-          3 & 4. HERO SECTION – HEADLINE & 2-COLUMN RESPONSIVE LAYOUT
+          1. REDESIGN HERO SECTION: CENTERED GLASSMORPHISM CARD
           ========================================================= */}
-      <section className="hero-container">
-        <div className="hero-text-col">
-          <div className="hero-label-tag">
-            <span>✦ YOUR DIGITAL MARKETPLACE</span>
-          </div>
-          <h2 className="hero-main-title">
-            Segalanya Untuk <span className="gradient-teal">Projek Digital</span> Anda
-          </h2>
-          <p className="hero-subtext">
-            Templat eksklusif, perisian digital dan akaun premium untuk membantu anda berkarya dengan lebih pantas, mudah dan profesional.
-          </p>
+      <section className="hero-glass-card">
+        <div className="hero-label-tag">
+          <span>✦ YOUR DIGITAL MARKETPLACE</span>
         </div>
-
-        {/* Visual Ilustrasi 2-Column Desktop */}
-        <div className="hero-visual-board">
-          <div className="floating-card-mock anim-1">
-            <div className="mock-icon-box" style={{ background: "rgba(0, 217, 245, 0.15)", color: "var(--neon-cyan)" }}>
-              <Globe size={22} />
-            </div>
-            <div>
-              <strong style={{ fontSize: "0.95rem" }}>Templat Kad Kahwin & Bisnes</strong>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Siap RSVP, muzik latar & Google Maps</p>
-            </div>
-          </div>
-
-          <div className="floating-card-mock anim-2">
-            <div className="mock-icon-box" style={{ background: "rgba(245, 158, 11, 0.15)", color: "var(--admin-accent)" }}>
-              <Bot size={22} />
-            </div>
-            <div>
-              <strong style={{ fontSize: "0.95rem" }}>Akaun Premium & AI Berlesen</strong>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>ChatGPT Plus, Netflix 4K, Spotify</p>
-            </div>
-          </div>
-
-          <div className="floating-card-mock anim-3">
-            <div className="mock-icon-box" style={{ background: "rgba(0, 212, 154, 0.15)", color: "var(--emerald)" }}>
-              <Code size={22} />
-            </div>
-            <div>
-              <strong style={{ fontSize: "0.95rem" }}>Kod Sumber & UI Kit Moden</strong>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>React, Next.js & Tailwind sedia guna</p>
-            </div>
-          </div>
-        </div>
+        <h2 className="hero-main-title">
+          Segalanya Untuk <span className="gradient-teal">Projek Digital</span> Anda
+        </h2>
+        <p className="hero-subtext">
+          Templat eksklusif, perisian digital dan akaun premium untuk membantu anda berkarya dengan lebih pantas, mudah dan profesional.
+        </p>
       </section>
 
       {/* =========================================================
-          5. BENEFIT SECTION (4 KAD KELEBIHAN)
+          BENEFIT SECTION (4 KAD KELEBIHAN)
           ========================================================= */}
       <section className="section-block">
         <div className="section-head-center">
@@ -657,84 +600,79 @@ function App() {
       </section>
 
       {/* =========================================================
-          6. FIRST TIME RECHARGE BONUS SYSTEM (PROMOSI UTAMA)
+          2. KECILKAN FIRST TIME RECHARGE BONUS: COMPACT PROMOTION CARD
           ========================================================= */}
-      <section className="recharge-promo-block">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <div className="promo-tag-badge">
-              <Sparkles size={13} /> ONE-TIME BONUS – NEW USERS ONLY
-            </div>
-            <h3 style={{ fontSize: "1.65rem", fontWeight: 800 }}>FIRST TIME RECHARGE BONUS</h3>
-            <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginTop: "0.3rem" }}>
-              Nikmati bonus istimewa untuk tambah nilai pertama anda!
-            </p>
+      <section className="recharge-promo-compact">
+        <div className="recharge-compact-top">
+          <div className="recharge-compact-top-left">
+            <span className="promo-tag-badge-compact">
+              <Sparkles size={11} /> ONE-TIME BONUS – NEW USERS ONLY
+            </span>
+            <h3 className="recharge-compact-title">FIRST TIME RECHARGE BONUS</h3>
+            <span className="recharge-compact-sub">Nikmati bonus istimewa untuk tambah nilai pertama anda!</span>
           </div>
 
           {currentUser && (
-            <div className="mono" style={{ fontSize: "0.82rem", background: "rgba(0,0,0,0.4)", padding: "0.5rem 1rem", borderRadius: "10px", border: "1px solid var(--border-subtle)" }}>
-              Status Akaun: {currentUser.hasClaimedFirstRechargeBonus ? (
+            <div className="mono status-badge-compact">
+              {currentUser.hasClaimedFirstRechargeBonus ? (
                 <strong style={{ color: "var(--emerald)" }}>First Recharge Bonus Claimed ✓</strong>
               ) : (
-                <strong style={{ color: "var(--neon-cyan)" }}>Layak Menerima Bonus Promosi</strong>
+                <strong style={{ color: "var(--neon-cyan)" }}>Layak Menerima Bonus</strong>
               )}
             </div>
           )}
         </div>
 
-        <div className="recharge-grid">
-          <div className="recharge-card-lux">
+        <div className="recharge-grid-compact">
+          <div className="recharge-card-compact">
             <div>
-              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM5</span>
-              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag">BONUS +RM1</span></div>
+              <span className="mono" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 700 }}>TOPUP RM5</span>
+              <div><span className="bonus-pill-tag">BONUS +RM1</span></div>
             </div>
             <div>
               <div className="mono total-credit-val">TOTAL RM6</div>
-              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Kredit Diterima</small>
             </div>
           </div>
 
-          <div className="recharge-card-lux" style={{ borderColor: "rgba(0, 217, 245, 0.4)" }}>
+          <div className="recharge-card-compact" style={{ borderColor: "rgba(0, 217, 245, 0.3)" }}>
             <div>
-              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM10</span>
-              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag" style={{ borderColor: "var(--neon-cyan)", color: "var(--neon-cyan)" }}>BONUS +RM2</span></div>
+              <span className="mono" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 700 }}>TOPUP RM10</span>
+              <div><span className="bonus-pill-tag" style={{ borderColor: "var(--neon-cyan)", color: "var(--neon-cyan)" }}>BONUS +RM2</span></div>
             </div>
             <div>
               <div className="mono total-credit-val" style={{ color: "var(--neon-cyan)" }}>TOTAL RM12</div>
-              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Pilihan Paling Popular</small>
             </div>
           </div>
 
-          <div className="recharge-card-lux" style={{ borderColor: "rgba(245, 158, 11, 0.4)" }}>
+          <div className="recharge-card-compact" style={{ borderColor: "rgba(245, 158, 11, 0.3)" }}>
             <div>
-              <span className="mono" style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>TOPUP RM50</span>
-              <div style={{ margin: "0.5rem 0" }}><span className="bonus-pill-tag" style={{ borderColor: "var(--admin-accent)", color: "var(--admin-accent)" }}>BONUS +RM5</span></div>
+              <span className="mono" style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 700 }}>TOPUP RM50</span>
+              <div><span className="bonus-pill-tag" style={{ borderColor: "var(--admin-accent)", color: "var(--admin-accent)" }}>BONUS +RM5</span></div>
             </div>
             <div>
               <div className="mono total-credit-val" style={{ color: "var(--admin-accent)" }}>TOTAL RM55</div>
-              <small className="mono" style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Nilai Maksimum</small>
             </div>
           </div>
         </div>
       </section>
 
       {/* =========================================================
-          7. WHATSAPP SUPPORT SECTION
+          WHATSAPP SUPPORT SECTION (KEKAL)
           ========================================================= */}
       <section className="whatsapp-support-box">
         <div className="wa-left-meta">
           <span className="wa-label-tag">BELI PIN / BANTUAN ADMIN</span>
-          <h3 style={{ fontSize: "1.7rem", fontWeight: 800, margin: "0.3rem 0" }}>Perlukan Bantuan?</h3>
-          <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+          <h3 style={{ fontSize: "1.6rem", fontWeight: 800, margin: "0.3rem 0" }}>Perlukan Bantuan?</h3>
+          <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
             Hubungi admin kami untuk pertanyaan, pembelian PIN dan bantuan berkaitan produk digital.
           </p>
         </div>
 
         <div style={{ textAlign: "center" }}>
           <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="wa-btn-pill">
-            <MessageCircle size={20} /> WhatsApp Admin – 018-3915460
+            <MessageCircle size={19} /> WhatsApp Admin – 018-3915460
           </a>
-          <p style={{ fontSize: "0.75rem", color: "var(--emerald)", marginTop: "0.6rem", fontWeight: 600 }}>
+          <p style={{ fontSize: "0.72rem", color: "var(--emerald)", marginTop: "0.5rem", fontWeight: 600 }}>
             ● Khidmat Sokongan Pantas
           </p>
         </div>
@@ -775,7 +713,7 @@ function App() {
       </section>
 
       {/* =========================================================
-          KATALOG PRODUK & PENAPIS (MOBILE OPTIMIZED)
+          KATALOG PRODUK & PENAPIS
           ========================================================= */}
       <div className="toolbar-row">
         <div className="filter-group mono">
@@ -816,7 +754,6 @@ function App() {
         </div>
       </div>
 
-      {/* Grid Produk */}
       <section className="product-grid">
         {filteredProducts.map((p) => (
           <div key={p.id} className="prod-card">
@@ -875,10 +812,10 @@ function App() {
       </section>
 
       {/* =========================================================
-          MODALS & SYSTEM OVERLAYS (FUNGSI ASAL KEKAL SEPENUHNYA)
+          MODALS & OVERLAYS
           ========================================================= */}
 
-      {/* MODAL PETI MASUK PENGGUNA (INBOX & STATUS PESANAN) */}
+      {/* MODAL PETI MASUK PENGGUNA */}
       {showInbox && currentUser && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -1092,7 +1029,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL AUTH (LOGIN & REGISTER - TIADA BONUS PENDAFTARAN) */}
+      {/* MODAL AUTH */}
       {showAuth && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -1146,7 +1083,7 @@ function App() {
         </div>
       )}
 
-      {/* MODAL ADMIN DASHBOARD (PIN RAHSIA KEKAL DILINDUNGI) */}
+      {/* MODAL ADMIN DASHBOARD */}
       {showAdmin && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ borderColor: "var(--admin-accent)" }}>
