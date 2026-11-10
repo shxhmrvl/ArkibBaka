@@ -121,7 +121,7 @@ const INITIAL_PRODUCTS = [
     category: "templates",
     categoryLabel: "Templates",
     title: "Template Resume & CV ATS-Friendly Pro",
-    desc: "Format templat moden yang melepasi sistem tapisan ATS syarikat antarabangsa.",
+    desc: "Format template moden yang melepasi sistem tapisan ATS syarikat antarabangsa.",
     price: 8.0,
     rating: 4.7,
     sales: 320,
@@ -1795,3 +1795,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>
 );
+c
