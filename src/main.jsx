@@ -126,12 +126,12 @@ const INITIAL_PRODUCTS = [
     rating: 4.7,
     sales: 320,
     badge: "Verified",
-    previewImg: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?auto=format&fit=crop&w=800&q=80",
+    previewImg: "https://i.ibb.co/fYYLZSG7/Screenshot-20261110-090336-com-android-chrome-Chrome-Tabbed-Activity.jpg",
     fullWriteup: "Dibina khas mengikut piawaian sistem tapisan Applicant Tracking System (ATS). Tipografi dan susunan maklumat disusun rapi untuk memaksimumkan peluang temuduga kerja.",
     features: ["Format Web & PDF", "Standard ATS Terbukti", "Mudah Edit dalam 5 Minit"],
     specs: "HTML / PDF / DOCX Template",
     included: ["Template Fail PDF & Web", "Panduan Penulisan Resume"],
-    downloadUrl: "https://github.com/example/ats-resume-template"
+    downloadUrl: "https://shxhmrvl.github.io/resume-cv/"
   },
   {
     id: "prm_chatgpt_plus",
